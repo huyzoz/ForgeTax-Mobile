@@ -62,16 +62,23 @@ pub struct Settings {
 
 impl Default for Settings {
     fn default() -> Self {
+        // R-20 — REAL defaults from the original (behavior.json
+        // settings_defaults, ForgeSettingsData..ctor 0x24FB25C +
+        // ForgeUserSettings.Defaults() 0x2503FA0): master/music/sfx 1.0,
+        // brightness 0.7, haptics true (row stays disabled on PC),
+        // floorSwordLimit 30, hubControls false = FREE movement,
+        // showFps false. Quality + language unmapped — "auto"/"vi" stay
+        // as marked approximations (TODO-RE).
         Self {
-            master: 80.0,
-            music: 60.0,
-            sfx: 90.0,
-            haptics: false,
-            brightness: 100.0,
+            master: 100.0,
+            music: 100.0,
+            sfx: 100.0,
+            haptics: true,
+            brightness: 70.0,
             quality: "auto".to_string(),
             show_fps: false,
-            floor_swords: 3,
-            controls: "hub".to_string(),
+            floor_swords: 30,
+            controls: "free".to_string(),
             lock_on: false,
             language: "vi".to_string(),
         }
@@ -99,6 +106,11 @@ pub struct FeverSnapshot {
     pub needed: u32,
     pub active: bool,
     pub time_left: f64,
+    // R-07/R-15: Fever bonus (effects+0x128) + max (effects+0xd4) from
+    // StartFever (RVA 0x263DCC4) — the frontend needs them for FeverAge /
+    // FeverEnvelope / cameraPower (behavior.json fever).
+    pub bonus: f64,
+    pub max: f64,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -112,6 +124,9 @@ pub struct StateSnapshot {
     pub anger: u8,
     pub endless: bool,
     pub sword: Option<SwordSnapshot>,
+    // R-17: index of the current sword within the round (0-based) — the
+    // frontend derives the run serial + appearance parent from it.
+    pub sword_index: usize,
     pub swords_left: usize,
     pub chances: [u32; 5],
     pub fever: FeverSnapshot,
@@ -195,6 +210,7 @@ fn snapshot(run: &Run) -> StateSnapshot {
         anger: run.contract.anger,
         endless: run.contract.is_endless(),
         sword,
+        sword_index: run.current_index(),
         swords_left: run.swords_left(),
         chances: run.chances(),
         fever: FeverSnapshot {
@@ -202,6 +218,8 @@ fn snapshot(run: &Run) -> StateSnapshot {
             needed: run.fever.charge_needed(),
             active: run.fever.is_active(),
             time_left: run.fever.time_left(),
+            bonus: run.fever.bonus(),
+            max: run.fever.max(),
         },
         relics: run
             .loadout
