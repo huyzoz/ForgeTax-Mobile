@@ -44,6 +44,9 @@ struct StateSnap {
     anger: u8,
     endless: bool,
     sword: Option<SwordSnap>,
+    // R-17: index of the current sword within the round (0-based) — the
+    // frontend derives the run serial + appearance parent from it.
+    sword_index: usize,
     swords_left: usize,
     chances: [u32; 5],
     fever: FeverSnap,
@@ -58,6 +61,11 @@ struct FeverSnap {
     needed: u32,
     active: bool,
     time_left: f64,
+    // R-07/R-15: Fever bonus (effects+0x128) + max (effects+0xd4) from
+    // StartFever (RVA 0x263DCC4) — the frontend needs them for FeverAge /
+    // FeverEnvelope / cameraPower (behavior.json fever).
+    bonus: f64,
+    max: f64,
 }
 
 fn snapshot(run: &Run) -> StateSnap {
@@ -83,6 +91,7 @@ fn snapshot(run: &Run) -> StateSnap {
             damage_count: s.damage_count,
             great_forged: s.great_forged,
         }),
+        sword_index: run.current_index(),
         swords_left: run.swords_left(),
         chances: run.chances(),
         fever: FeverSnap {
@@ -90,6 +99,8 @@ fn snapshot(run: &Run) -> StateSnap {
             needed: run.fever.charge_needed(),
             active: run.fever.is_active(),
             time_left: run.fever.time_left(),
+            bonus: run.fever.bonus(),
+            max: run.fever.max(),
         },
         relics: run.loadout.relics().iter().map(|r| r.id.to_string()).collect(),
         strikes: run.strikes,
@@ -222,10 +233,17 @@ impl App {
 }
 
 fn default_settings() -> Value {
+    // R-20 — REAL defaults from the original (behavior.json
+    // settings_defaults, ForgeSettingsData..ctor 0x24FB25C +
+    // ForgeUserSettings.Defaults() 0x2503FA0): master/music/sfx 1.0 (100%),
+    // brightness 0.7 (70%), haptics true (panel row stays disabled on PC —
+    // no vibration motor), floorSwordLimit 30, hubControls false = FREE
+    // movement (not hub), showFps false. Quality + language defaults are
+    // NOT in the recovered data — "auto"/"vi" stay as marked approximations.
     serde_json::json!({
-        "master": 80, "music": 60, "sfx": 90, "haptics": false,
-        "brightness": 100, "quality": "auto", "show_fps": false,
-        "floor_swords": 3, "controls": "hub", "lock_on": false,
+        "master": 100, "music": 100, "sfx": 100, "haptics": true,
+        "brightness": 70, "quality": "auto", "show_fps": false,
+        "floor_swords": 30, "controls": "free", "lock_on": false,
         "language": "vi"
     })
 }
