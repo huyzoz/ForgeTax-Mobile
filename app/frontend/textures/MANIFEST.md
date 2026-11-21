@@ -4,7 +4,7 @@ Source: `unity/assets/bin/Data/data.unity3d` (Unity 6000.0.83f1, package `com.so
 Extracted with UnityPy 1.25.4 + Pillow 10.2.0 (static extraction only — the APK was never executed).
 Full inventory: `unity/textures-3.17.0/INVENTORY.md` + `manifest.json` (1,914 decoded PNGs, 56 MB).
 
-Only the P0 forge-room subset is copied here (29 files). The full set stays in the workspace —
+Only the P0 forge-room subset is copied here (30 files). The full set stays in the workspace —
 copying all 1,914 files into the app is infeasible for the browser-push flow.
 
 Textures are applied through the materials table in `scene-data.json` (built by
@@ -43,8 +43,9 @@ is a short human note, not the binding record.
 | 186 | `Broken stone pits` | 256x256 | ETC_RGB4 | 116563 | _BumpMap for "Rough exposed stone core" (walls / jambs / arch) |
 | 187 | `Hide pores` | 256x256 | ETC2_RGB | 58461 | Material _BaseMap (see scene-data.json materials) |
 | 189 | `Worn shelf timber` | 256x256 | ETC2_RGB | 60557 | Shelf timber _BaseMap |
+| 172 | `SoftParticle` | 64x64 | ETC2_RGBA8 | 1901 | Particle sprite — white soft blob (flame / embers / sparks), tinted by material colour |
 
-Total: 29 files, 3375716 bytes.
+Total: 30 files, 3489783 bytes.
 
 ## Excluded (deliberately NOT copied)
 
