@@ -1,0 +1,9 @@
+[package]
+name = "forgetax-core"
+version = "0.1.0"
+edition = "2021"
+description = "Pure-logic core of the ForgeTax MOBILE (Soucean 3.17.0) clean-room remake: ticket deck (FillDeck/Chances), break curve, contract/tribute, Fever, relics, swords. No graphics, no audio, no I/O."
+license = "MIT"
+
+[dependencies]
+# Intentionally empty: std-only, so the crate builds offline anywhere.
