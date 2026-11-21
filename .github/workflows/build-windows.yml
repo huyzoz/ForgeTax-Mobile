@@ -92,16 +92,25 @@ jobs:
 
           New-Item -ItemType Directory -Force release-artifacts | Out-Null
 
-          $setup = Get-ChildItem app/src-tauri/target/release/bundle/nsis/*-setup.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $setup) { throw 'NSIS installer not found under app/src-tauri/target/release/bundle/nsis/' }
+          # NOTE: app/src-tauri is a member of the repo-root Cargo
+          # workspace, so cargo puts ALL build outputs under the
+          # workspace-root target dir (target/release/...), NOT under
+          # app/src-tauri/target/. Search the workspace dir first and
+          # fall back to the app-local dir, so the step finds the
+          # installer wherever the toolchain actually put it (run #3
+          # failed here: the glob only looked under app/src-tauri).
+          $setup = Get-ChildItem target/release/bundle/nsis/*-setup.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $setup) { $setup = Get-ChildItem app/src-tauri/target/release/bundle/nsis/*-setup.exe -ErrorAction SilentlyContinue | Select-Object -First 1 }
+          if (-not $setup) { throw 'NSIS installer not found under target/release/bundle/nsis/ or app/src-tauri/target/release/bundle/nsis/' }
           $setupName = "ForgeTax-Mobile_${version}_x64-setup.exe"
           Copy-Item $setup.FullName "release-artifacts/$setupName"
 
           # Portable zip: Tauri 2 has no "zip" bundle target, so zip the
           # compiled exe ourselves (frontend is embedded in the binary;
           # WebView2 ships with Windows 11, so the exe runs standalone).
-          $exe = Get-ChildItem app/src-tauri/target/release/*.exe -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $exe) { throw 'App exe not found under app/src-tauri/target/release/' }
+          $exe = Get-ChildItem target/release/forgetax-mobile.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { $exe = Get-ChildItem app/src-tauri/target/release/forgetax-mobile.exe -ErrorAction SilentlyContinue | Select-Object -First 1 }
+          if (-not $exe) { throw 'App exe not found under target/release/ or app/src-tauri/target/release/' }
           $zipName = "ForgeTax-Mobile_${version}_x64.zip"
           Compress-Archive -Path $exe.FullName -DestinationPath "release-artifacts/$zipName" -Force
 
