@@ -1,4 +1,5 @@
 # ForgeTax Mobile — clean-room remake for Windows (P0)
+[![Build Windows](https://github.com/huyzoz/ForgeTax-Mobile/actions/workflows/build-windows.yml/badge.svg)](https://github.com/huyzoz/ForgeTax-Mobile/actions/workflows/build-windows.yml)
 
 A clean-room remake of **ForgeTax: Blacksmith Legends** (Soucean, v3.17.0,
 mobile) for weak Windows PCs. Built from the reverse-engineered game logic
