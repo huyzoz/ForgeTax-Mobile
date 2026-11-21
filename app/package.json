@@ -1,0 +1,1 @@
+{"description":"ForgeTax Mobile (Soucean 3.17.0) clean-room remake for Windows — Tauri 2 + 2D HTML/CSS/JS.","devDependencies":{"@tauri-apps/cli":"^2.0.0"},"name":"forgetax-mobile","private":true,"scripts":{"tauri":"tauri"},"version":"0.1.0"}
