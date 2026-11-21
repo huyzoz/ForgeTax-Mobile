@@ -37,8 +37,10 @@ ForgeTax-Mobile/
 │   └── tools/gen_data.py           # regenerates src/data.rs from Economy.txt
 ├── app/
 │   ├── package.json / package-lock.json   # Tauri CLI only (no frontend build)
-│   ├── frontend/                   # 2D UI (plain files, no bundler)
-│   │   ├── index.html  styles.css  app.js  sound.js  i18n.js  icon.png
+│   ├── frontend/                   # 3D UI (Three.js + original textures; plain files, no bundler)
+│   │   ├── index.html  styles.css  app.js  scene3d.js  sound.js  i18n.js  icon.png
+│   │   ├── vendor/three.module.min.js   # Three.js r170, offline
+│   │   └── textures/   # 22 original mobile 3.17.0 textures + MANIFEST.md
 │   └── src-tauri/
 │       ├── Cargo.toml  build.rs  tauri.conf.json
 │       ├── capabilities/default.json
@@ -83,24 +85,47 @@ prefers; the CI workflow must end up on huyzoz main.
    attach the three files. The installer is UNSIGNED — note in the
    release text that SmartScreen will warn and to check SHA-256 first.
 
-## What was verified locally (before this hand-off)
+## What was verified locally (3D rebuild, 2026-11-21)
 
 - `cargo test -p forgetax-core`: **80/80 green** (62 unit + 5 Economy
-  parity + 12 mobile parity + 1 doc-test). Includes FillDeck nail +4 /
-  pin +2, 24 quotas, mobile break-curve plateaus, Fever headless gate,
-  8-starter pool, scripted full 24-round run.
-- Dev-server API: `new_run` returns a valid state (8 starters,
-  grade-0 sword 320 G, chances [0, 69, 172, 621, 138] per-mille).
-- Headless-browser test (Playwright Chromium, 1280×720):
-  app renders, 12 strikes → grade +6 / 4,425 G, settings open via ESC,
-  Fever reached ("Nhập thần — 4.0s", GÃY 0.0% during Fever), FPS counter
-  shows 60, tribute works, **0 console errors, 0 failed requests**.
+  parity + 12 mobile parity + 1 doc-test). Core untouched by the 3D
+  rebuild.
+- Headless-browser test (Playwright Chromium + SwiftShader WebGL2,
+  1280×720, dev-server port 1420): app renders the 3D forge room
+  (real original textures: brick walls, forge mouth + flames, iron
+  anvil, blade + guard + handle, floor swords, grade badge), 12 strikes
+  → grade +6 / 10,413 G, settings open via ESC, Fever reached
+  ("Nhập thần — 4.0s", GÃY 0.0% during Fever), tribute works,
+  end-day advances round 1 → 2, click-on-anvil strikes via raycast
+  pick, drag-pan works in free-controls mode, FPS counter visible,
+  **0 console errors, 0 failed requests**.
   Screenshots: `.browser-test/01-forge.png`, `02-after-strikes.png`,
-  `03-settings.png`, `04-fever.png`.
+  `03-settings.png`, `04-fever.png` (3D shots; the old 2D shots were
+  deleted with the cancelled 2D scene).
+- FPS headless (SwiftShader software WebGL): **1–3 FPS** — that is the
+  software-rendering floor, NOT the target. Real hardware (WebView2 /
+  ANGLE / D3D11 on the HD 4400) is expected to hold 60; only Ethan's
+  live test proves it. The in-game FPS counter shows the real number.
+- WebGL probe: SwiftShader WebGL2 works ONLY with
+  `--use-angle=swiftshader --enable-unsafe-swiftshader`; plain
+  `--disable-gpu` gives NO WebGL. browser-test.js uses the working flags.
 - The Tauri shell's `cargo check` does NOT pass on Linux (missing
   gdk-3.0 — same known limitation as Smailwolf). Windows CI is the
   authoritative gate for the app shell; the core + dev-server build
   and test fine on Linux.
+
+## 3D scene notes (for the next agent)
+
+- Three.js r170 bundled offline at `app/frontend/vendor/three.module.min.js`.
+- Textures: 22 original mobile 3.17.0 textures in
+  `app/frontend/textures/` + `MANIFEST.md` (path_id for every file).
+- Geometry is simple primitives (extruded anvil/blade profiles, boxes,
+  cylinders) — never the original's meshes (not extracted).
+- Blade-shape textures (`Large/Medium/Thin`) decode to black RGB +
+  noise alpha — NOT usable as blade art; true shader role unrecovered
+  (TODO-RE in `scene3d.js`). `flame.png` / `spark.png` are misnamed
+  (dark rock renders); particles use the `cfxr_*` masks + `SoftFlame`.
+- Shadows are OFF by design (60 FPS on weak GPUs).
 
 ## Known TODO-RE markers in the code (do not present as real)
 

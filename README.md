@@ -1,10 +1,12 @@
 # ForgeTax Mobile — clean-room remake for Windows (P0)
-[![Build Windows](https://github.com/huyzoz/ForgeTax-Mobile/actions/workflows/build-windows.yml/badge.svg)](https://github.com/huyzoz/ForgeTax-Mobile/actions/workflows/build-windows.yml)
 
 A clean-room remake of **ForgeTax: Blacksmith Legends** (Soucean, v3.17.0,
 mobile) for weak Windows PCs. Built from the reverse-engineered game logic
 (balance numbers, ticket formulas, Fever rules), NOT from the original's
-source, assets, sounds or text.
+source. The 3D forge room wears the ORIGINAL mobile 3.17.0 textures,
+extracted from the real APK (Ethan's order 2026-11-21 — the 2D hand-drawn
+version was cancelled as fabricated); the geometry is simple primitives,
+and sound + wording are recreated.
 
 **P0 = the playable forge loop.** Strike → ticket draw → grade/value →
 break → Fever → 24 contracts + tribute → win/lose + endless. 8 starter
@@ -12,29 +14,34 @@ relics only. No merchant, no dragon fight, no codex — those are P1/P2.
 
 ## Stack
 
-- **Tauri 2** (Rust backend + 2D HTML/CSS/JS frontend in WebView2).
-  No Bevy, no wgpu, no 3D: the earlier Bevy P0 black-screened on the
-  Intel HD 4400 (wgpu fell back to the WARP software renderer), so the
-  remake is 2D DOM by design. A 2D DOM scene cannot black-screen the way
-  a 3D context can; if the frontend fails to load, the window shows a
-  plain error text.
+- **Tauri 2** (Rust backend + Three.js 3D frontend in WebView2).
+  No Bevy, no wgpu: the earlier Bevy P0 black-screened on the Intel
+  HD 4400 (wgpu fell back to the WARP software renderer). The 3D scene
+  here is Three.js/WebGL, which runs through ANGLE/D3D11 — the path
+  the HD 4400 actually supports. If WebGL or a texture is unavailable,
+  the window shows a plain error text instead of a black screen.
+  Three.js r170 is bundled offline in `app/frontend/vendor/`
+  (no CDN, no network at runtime).
 - **forgetax-core** — the pure-logic Rust crate (std-only, zero deps):
   FillDeck/Chances ticket math, mobile break curve, sword valuation,
   Fever, 119-relic registry, 24-round contract run.
 
 ## FPS — honest expectations
 
-There is no GPU 3D work in this app, so the HD 4400 is not the bottleneck:
-the scene is a handful of composited DOM layers in WebView2 (Edge
-Chromium), and the game logic is a few microseconds of Rust per strike.
+The scene is a small Three.js/WebGL room (one draw of a few dozen
+primitive meshes + points, ~2.8 MB of original textures, no shadow
+maps — shadows are OFF by design to hold 60 FPS on weak GPUs).
+The game logic is a few microseconds of Rust per strike.
 
-- **HP EliteBook 840 G1 (i5-4300U / HD 4400 / 8 GB, Windows 11):** the
-  2D scene should hold **60 FPS**; the in-game FPS counter (settings →
-  Hiện FPS) shows the real number on that machine.
-- **Any Windows 10/11 PC with WebView2:** same — 60 FPS expected; the
-  only work per frame is DOM compositing and the rAF loop.
-- **Weak dual-core / 4 GB machines:** still 60 FPS for the scene; the
-  app itself uses tens of MB (no 3D assets, no textures).
+- **HP EliteBook 840 G1 (i5-4300U / HD 4400 / 8 GB, Windows 11):**
+  the 3D scene should hold **60 FPS** (the display is 60 Hz); the
+  in-game FPS counter (settings → Hiện FPS) shows the real number on
+  that machine — only his live test proves it.
+- **Headless test (SwiftShader software WebGL):** slower than real
+  hardware; the FPS number there is a floor, not the target.
+- **Weak dual-core / 4 GB machines:** the quality setting
+  (Low/Medium/High) controls particle counts (6/18/36 per strike);
+  Low keeps the frame budget small.
 - The one thing that can drop frames is the browser's own compositor
   under heavy load (many apps open) — the FPS counter will show it
   honestly if it happens.
@@ -78,7 +85,7 @@ Check the SHA-256 first.
 | `forgetax-core/` | Pure game logic (std-only Rust). `src/data.rs` is generated from `tests/fixtures/Economy.txt` (the mobile balance file, kept as provenance). |
 | `forgetax-core/tests/` | Parity + mobile-parity + scripted-run tests. |
 | `app/src-tauri/` | Tauri 2 backend (commands, settings persistence). |
-| `app/frontend/` | 2D UI: `index.html`, `styles.css`, `app.js`, `sound.js`, `i18n.js`. |
+| `app/frontend/` | 3D UI: `index.html`, `styles.css`, `app.js` (DOM HUD + input), `scene3d.js` (Three.js forge room), `sound.js`, `i18n.js`, `vendor/three.module.min.js` (r170, offline), `textures/` (22 original mobile textures + `MANIFEST.md`). |
 | `app/package.json` | Tauri CLI only (no frontend build step — plain files). |
 | `tools/dev-server/` | HTTP test harness (serves the frontend + the real core). |
 | `.github/workflows/build-windows.yml` | CI: core tests on Linux + Tauri build on Windows. |
@@ -99,10 +106,15 @@ real. In particular:
   (REA-REPORT §15.3: live descriptions, no working effect).
 - The 25 VI keys missing from the original fall back to English
   (listed in `app/frontend/i18n.js`); none is used by the P0 UI.
-- All art, sound and wording are recreated. Sound is WebAudio-
+- Textures are the ORIGINAL mobile 3.17.0 textures, extracted from
+  the real APK with UnityPy (see `app/frontend/textures/MANIFEST.md`
+  for the path_id of every texture used). Geometry is simple
+  primitives wearing those textures — never the original's meshes
+  (the original meshes were NOT extracted). Sound is WebAudio-
   synthesized (see `app/frontend/sound.js`); no original audio files
-  are shipped. The ESC settings panel contains ONLY items verified
-  from the original's own vi.txt — no invented pause menu.
+  are shipped. Wording is recreated. The ESC settings panel contains
+  ONLY items verified from the original's own vi.txt — no invented
+  pause menu.
 - The original's save key is never used; the clone uses
   `forgetax_clone_v1_*`. No telemetry, no original endpoints.
 
@@ -111,7 +123,8 @@ real. In particular:
 IN: strike / ticket draw / grade & value / break & scrap / Fever
 (10 charges, 4s, headless gate) / 24 contracts + tribute / win-lose /
 endless / 8 starters / sound (synthesized) / ESC settings from vi.txt /
-FPS counter / settings persisted to disk.
+FPS counter / settings persisted to disk / 3D forge room (Three.js,
+original mobile textures, primitive geometry).
 
 OUT (P1/P2): merchant, all 119 relics, codex, 21-day legacy mode,
 dragon fight, save slots, sword catalog (510 swords — contents
