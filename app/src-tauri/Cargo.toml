@@ -1,0 +1,20 @@
+[package]
+name = "forgetax-mobile"
+version = "0.1.0"
+description = "ForgeTax Mobile (Soucean 3.17.0) clean-room remake for Windows — Tauri 2 + 2D HTML/CSS/JS. P0: playable forge loop."
+authors = ["ForgeTax-Mobile contributors"]
+license = "MIT"
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+forgetax-core = { path = "../../forgetax-core" }
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[profile.release]
+lto = true
+codegen-units = 1
