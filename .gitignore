@@ -1,0 +1,17 @@
+# Rust / Tauri build outputs (Cargo.lock is KEPT — reproducible builds)
+target/
+app/src-tauri/target/
+app/src-tauri/gen/
+tools/dev-server/target/
+
+# Node
+app/node_modules/
+
+# Dev/test artifacts (not shipped, not committed)
+settings.dev.json
+.browser-test/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db

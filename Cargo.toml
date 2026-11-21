@@ -1,0 +1,3 @@
+[workspace]
+members = ["forgetax-core", "app/src-tauri", "tools/dev-server"]
+resolver = "2"
