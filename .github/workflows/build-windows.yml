@@ -1,0 +1,124 @@
+# Build ForgeTax Mobile (Tauri 2 + 2D HTML/CSS/JS) on Windows.
+#
+# This is the AUTHORITATIVE build gate: the full `cargo check` / Tauri
+# build never passes on Linux (missing gdk-3.0 for the host check,
+# missing MinGW windres for the Windows-target check). If this workflow
+# is green, the Windows build is real; if it is red, do NOT cut a release.
+#
+# The Rust core (forgetax-core) is std-only and IS checked on Linux in
+# the test-core job below — the Tauri shell is the only Linux-blocked part.
+#
+# Produces:
+#   - NSIS installer  (.setup.exe)
+#   - Portable build  (.zip of the compiled exe; Tauri 2 has no "zip" bundle target)
+#   - SHA256SUMS.txt  (SHA-256 over both artifacts)
+# No code signing is configured: the installer is UNSIGNED and Windows
+# SmartScreen will warn on first run (check SHA-256 first).
+
+name: Build Windows
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  # Core logic gate — runs on Linux, where the std-only core builds.
+  test-core:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Core tests (80 tests: logic + mobile parity + scripted run)
+        run: cargo test -p forgetax-core
+
+      - name: Dev-server builds (test harness, not shipped)
+        run: cargo build -p forgetax-dev-server
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install Tauri CLI
+        working-directory: app
+        run: npm ci
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Tauri CLI sanity check
+        working-directory: app
+        run: npx tauri --version
+
+      # Explicit gate BEFORE the build: must pass on windows-latest, where
+      # the MSVC toolchain (and windres, for the Windows target) exists.
+      # This is the check that never passed on Linux — do not skip it.
+      - name: cargo check (Rust backend + core gate)
+        run: cargo check -p forgetax-mobile -p forgetax-core
+
+      - name: Core tests (Windows gate)
+        run: cargo test -p forgetax-core
+
+      - name: Tauri build (NSIS installer)
+        working-directory: app
+        run: npx tauri build
+
+      - name: Collect artifacts + SHA-256 checksums
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $version = (Get-Content app/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          if (-not $version) { throw 'Could not read version from app/src-tauri/tauri.conf.json' }
+
+          New-Item -ItemType Directory -Force release-artifacts | Out-Null
+
+          $setup = Get-ChildItem app/src-tauri/target/release/bundle/nsis/*-setup.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $setup) { throw 'NSIS installer not found under app/src-tauri/target/release/bundle/nsis/' }
+          $setupName = "ForgeTax-Mobile_${version}_x64-setup.exe"
+          Copy-Item $setup.FullName "release-artifacts/$setupName"
+
+          # Portable zip: Tauri 2 has no "zip" bundle target, so zip the
+          # compiled exe ourselves (frontend is embedded in the binary;
+          # WebView2 ships with Windows 11, so the exe runs standalone).
+          $exe = Get-ChildItem app/src-tauri/target/release/*.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $exe) { throw 'App exe not found under app/src-tauri/target/release/' }
+          $zipName = "ForgeTax-Mobile_${version}_x64.zip"
+          Compress-Archive -Path $exe.FullName -DestinationPath "release-artifacts/$zipName" -Force
+
+          # SHA256SUMS.txt over every artifact in the folder (itself excluded).
+          # NOTE: collect the lines in a variable FIRST — piping straight into
+          # Out-File creates SHA256SUMS.txt before Get-ChildItem runs, so the
+          # file lists (and locks) itself and Get-FileHash fails.
+          $lines = Get-ChildItem release-artifacts/* -File | Where-Object { $_.Name -ne 'SHA256SUMS.txt' } | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)"
+          }
+          $lines | Out-File -Encoding ascii release-artifacts/SHA256SUMS.txt
+          Get-Content release-artifacts/SHA256SUMS.txt
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: forgetax-mobile-windows
+          path: release-artifacts/
+          if-no-files-found: error
