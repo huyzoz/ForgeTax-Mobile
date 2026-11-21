@@ -1,0 +1,1 @@
+{"$schema":"../gen/schemas/capabilities.json","description":"Default capability. The frontend only invokes app-defined Rust commands (new_run, get_state, strike, tribute_sword, end_day, tick, continue_endless, load_settings, save_settings); no plugin JS APIs are used.","identifier":"default","permissions":["core:event:default"],"windows":["main"]}
