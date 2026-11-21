@@ -24,7 +24,10 @@ async function httpJson(url) {
 
 async function main() {
   const chrome = spawn(CHROME, [
-    "--headless=new", "--no-sandbox", "--disable-gpu",
+    "--headless=new", "--no-sandbox",
+    // WebGL in this headless env needs software ANGLE (SwiftShader);
+    // --disable-gpu kills WebGL entirely (probe 2026-11-21: NO WEBGL).
+    "--use-angle=swiftshader", "--enable-unsafe-swiftshader",
     `--remote-debugging-port=${PORT}`,
     "--window-size=1280,720",
     "--user-data-dir=/tmp/ft-chrome-test",
@@ -102,6 +105,9 @@ async function main() {
     }
     if (!appVisible) throw new Error("app never became visible; loading=" + await evalJs(`document.getElementById('loading').textContent`) + " error=" + await evalJs(`document.getElementById('error').textContent`));
     await sleep(500);
+    // 3D scene must be up: WebGL canvas present + ForgeScene ready.
+    const scene3d = await evalJs(`(() => { const c = document.querySelector('#gl canvas'); return { canvas: !!c, ready: !!(window.ForgeScene && window.ForgeScene.ready), webgl: c ? !!c.getContext('webgl2') : false }; })()`);
+    if (!scene3d.canvas || !scene3d.ready) throw new Error("3D scene not ready: " + JSON.stringify(scene3d));
     await shot("01-forge.png");
 
     // Strike 12 times via the real button.
@@ -133,9 +139,8 @@ async function main() {
       await evalJs(`(() => { const b = document.getElementById('btn-strike'); if (!b.disabled) b.click(); return true; })()`);
       await sleep(100);
       feverSeen = await evalJs(`document.getElementById('fever-label').textContent.includes('Nhập thần —') || document.getElementById('fever-fill').classList.contains('active')`);
-      // If the sword broke, tribute it and keep going on the next sword.
-      const broken = await evalJs(`document.getElementById('sword-el').classList.contains('broken')`);
-      if (broken) await evalJs(`(() => { const b = document.getElementById('btn-tribute'); if (!b.disabled) b.click(); return true; })()`);
+      // A broken sword leaves the anvil immediately (core advance()), so
+      // the next sword is already up — no manual recovery needed here.
     }
     await sleep(300);
     const feverLabel = await evalJs(`document.getElementById('fever-label').textContent`);
@@ -151,6 +156,7 @@ async function main() {
 
     const summary = {
       appVisible,
+      scene3d,
       strikesClicked: strikes,
       afterStrikes,
       settingsVisible,
