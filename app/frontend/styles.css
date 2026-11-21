@@ -1,7 +1,7 @@
-/* ForgeTax Mobile remake — P0 2D forge scene.
-   Flat, dark forge palette (charcoal + ember + brass). No plastic look:
-   flat colours, hard edges, subtle gradients only for hot metal/glow.
-   Everything is CSS shapes — no copied artwork. */
+/* ForgeTax Mobile remake — P0 3D forge scene (Three.js + original
+   mobile 3.17.0 textures). Flat, dark forge palette (charcoal + ember +
+   brass). No plastic look. Geometry is simple primitives wearing the
+   original's textures — never the original's meshes. */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -65,107 +65,22 @@ html, body {
 }
 #btn-settings:hover { background: #4a3826; }
 
-/* -- forge scene -------------------------------------------------------- */
+/* -- forge scene (3D) ---------------------------------------------------- */
+/* The forge room is a Three.js WebGL canvas (#gl) wearing the ORIGINAL
+   mobile 3.17.0 textures (see textures/MANIFEST.md). Geometry is simple
+   primitives — never the original's meshes. The HUD below stays DOM. */
 #scene {
   flex: 1; position: relative; overflow: hidden; cursor: pointer;
-  background: linear-gradient(180deg, #1d1712 0%, #241a12 55%, #171009 100%);
+  background: #171310;
 }
-#scene-inner { position: absolute; inset: 0; transition: transform 0.1s linear; }
-.wall {
-  position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 420px 200px at 50% 78%, rgba(232, 98, 42, 0.20), transparent 70%),
-    repeating-linear-gradient(0deg, transparent 0 46px, rgba(0,0,0,0.18) 46px 48px);
-}
-.ember-glow {
-  position: absolute; left: 50%; bottom: 0; width: 640px; height: 120px;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse at center, rgba(232, 98, 42, 0.35), transparent 70%);
-}
-#floor-layer { position: absolute; left: 0; right: 0; bottom: 8px; height: 46px; }
-.floor-sword {
-  position: absolute; bottom: 10px; width: 120px; height: 6px;
-  background: linear-gradient(90deg, #8a94a6, #c8ccd4 70%, #8a94a6);
-  border-radius: 3px; opacity: 0.55;
-}
-.floor-sword::after {
-  content: ""; position: absolute; right: -14px; top: -2px;
-  width: 14px; height: 10px; background: #5a4632; border-radius: 2px;
-}
-
-.anvil { position: absolute; left: 50%; bottom: 64px; transform: translateX(-50%); }
-.anvil-top {
-  width: 340px; height: 26px; background: #6a707c;
-  border-top: 3px solid #aab2c0; border-radius: 4px 4px 0 0;
-  margin: 0 auto;
-}
-.anvil-body {
-  width: 150px; height: 56px; margin: 0 auto;
-  background: #4a4e58;
-  clip-path: polygon(0 0, 100% 0, 82% 100%, 18% 100%);
-}
-.anvil-base {
-  width: 230px; height: 18px; margin: 0 auto; background: #3a3e48;
-  border-radius: 3px;
-}
-
-.sword {
-  position: absolute; left: 50%; bottom: 108px;
-  transform: translateX(-50%);
-  width: 300px; height: 40px;
-}
-.sword .blade {
-  position: absolute; left: 0; top: 12px; width: 220px; height: 14px;
-  background: linear-gradient(180deg, #e8ecf2, #9aa2b0 55%, #6a707c);
-  clip-path: polygon(0 0, 88% 0, 100% 50%, 88% 100%, 0 100%);
-}
-.sword .guard {
-  position: absolute; left: 216px; top: 4px; width: 10px; height: 30px;
-  background: #c9963c; border-radius: 2px;
-}
-.sword .handle {
-  position: absolute; left: 226px; top: 10px; width: 56px; height: 18px;
-  background: #5a3a22; border-radius: 4px;
-  border: 2px solid #3a2412;
-}
-.sword.great .blade { background: linear-gradient(180deg, #ffe9a8, #e8b23c 55%, #9a6a1a); }
-.sword.broken { transform: translateX(-50%) rotate(14deg); opacity: 0.45; }
+#gl { position: absolute; inset: 0; }
+#gl canvas { display: block; width: 100%; height: 100%; }
 .grade-badge {
-  position: absolute; left: -46px; top: -6px;
+  position: absolute; z-index: 5; pointer-events: none;
   min-width: 40px; height: 40px; line-height: 40px; text-align: center;
   background: #c9963c; color: #171310; font-weight: 800; font-size: 17px;
   border-radius: 50%; border: 2px solid #f0e6d6;
-}
-
-.hammer {
-  position: absolute; left: calc(50% + 130px); bottom: 150px;
-  width: 90px; height: 150px;
-  transform-origin: 20% 90%;
-}
-.hammer-head {
-  position: absolute; top: 0; left: 8px; width: 74px; height: 30px;
-  background: #8a94a6; border-radius: 4px; border-bottom: 3px solid #5a606c;
-}
-.hammer-handle {
-  position: absolute; top: 26px; left: 38px; width: 12px; height: 118px;
-  background: #7a5230; border-radius: 6px;
-}
-.hammer.swing { animation: swing 0.22s ease-in; }
-@keyframes swing {
-  0% { transform: rotate(-38deg); }
-  60% { transform: rotate(6deg); }
-  100% { transform: rotate(0deg); }
-}
-
-#sparks-layer { position: absolute; inset: 0; pointer-events: none; }
-.spark {
-  position: absolute; width: 5px; height: 5px; border-radius: 50%;
-  background: #ffb43c; box-shadow: 0 0 6px #e8622a;
-  animation: spark-fly 0.6s ease-out forwards;
-}
-@keyframes spark-fly {
-  from { transform: translate(0, 0); opacity: 1; }
-  to { transform: translate(var(--dx, 40px), var(--dy, -40px)); opacity: 0; }
+  transform: translate(-50%, -50%);
 }
 
 #outcome-pop {

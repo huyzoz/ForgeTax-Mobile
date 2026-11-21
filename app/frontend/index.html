@@ -6,6 +6,9 @@
   <title>ForgeTax Mobile — Bản làm lại cho PC</title>
   <link rel="icon" href="icon.png">
   <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.min.js" } }
+  </script>
 </head>
 <body>
   <div id="loading" data-i18n="ui.loading">Đang tải…</div>
@@ -28,28 +31,9 @@
     </header>
 
     <main id="scene">
-      <div id="scene-inner">
-        <div class="wall"></div>
-        <div class="ember-glow"></div>
-        <div id="floor-layer"></div>
-        <div class="anvil">
-          <div class="anvil-top"></div>
-          <div class="anvil-body"></div>
-          <div class="anvil-base"></div>
-        </div>
-        <div id="sword-el" class="sword">
-          <div class="blade"></div>
-          <div class="guard"></div>
-          <div class="handle"></div>
-          <div id="sword-grade" class="grade-badge">+0</div>
-        </div>
-        <div id="hammer-el" class="hammer">
-          <div class="hammer-head"></div>
-          <div class="hammer-handle"></div>
-        </div>
-        <div id="sparks-layer"></div>
-        <div id="outcome-pop"></div>
-      </div>
+      <div id="gl"></div>
+      <div id="sword-grade" class="grade-badge" style="display:none">+0</div>
+      <div id="outcome-pop"></div>
     </main>
 
     <section id="hud">
@@ -151,6 +135,7 @@
 
   <script src="i18n.js"></script>
   <script src="sound.js"></script>
+  <script type="module" src="scene3d.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,7 +1,10 @@
-// ForgeTax Mobile remake — P0 frontend (2D DOM, no 3D, no canvas 3D).
+// ForgeTax Mobile remake — P0 frontend (3D Three.js scene + DOM HUD).
 //
 // The game logic lives in the Rust core (forgetax-core); this file only
-// renders state and forwards input. Backend bridge:
+// renders state and forwards input. The forge room is rendered by
+// scene3d.js (Three.js, original mobile 3.17.0 textures); the topbar,
+// chances, Fever meter, buttons, settings and overlays stay DOM.
+// Backend bridge:
 //   - In the Tauri app: window.__TAURI__.core.invoke(cmd, args).
 //   - In dev/test mode (plain http server): POST /api/<cmd> with JSON.
 // If the backend is unreachable, a plain error text is shown — never a
@@ -63,8 +66,7 @@ const els = {};
 function collectEls() {
   ["loading", "error", "app", "contract-line", "quota-line", "quota-fill",
    "tribute-line", "anger-pips", "sword-grade", "sword-value", "sword-peak",
-   "sword-el", "hammer-el", "scene-inner", "scene", "sparks-layer",
-   "floor-layer", "chances", "fever-fill", "fever-label",
+   "scene", "gl", "chances", "fever-fill", "fever-label",
    "relic-chips", "btn-strike", "btn-tribute", "btn-endday", "btn-settings",
    "outcome-pop", "toast", "fps-counter", "brightness-overlay",
    "settings-panel", "overlay", "overlay-title", "overlay-sub",
@@ -106,16 +108,16 @@ function render() {
     els["anger-pips"].appendChild(pip);
   }
   els["anger-pips"].title = t("ending.anger");
-  // Sword.
+  // Sword: grade badge stays DOM (positioned over the 3D canvas by
+  // scene3d.js); the blade mesh itself is updated in the 3D scene.
   if (s.sword) {
     els["sword-grade"].textContent = "+" + s.sword.grade;
     els["sword-value"].textContent = t("inspect.value", [fmtGold(s.sword.value) + " G"]);
     els["sword-peak"].textContent = t("menu2.bestGrade") + ": " + fmtGold(s.sword.peak_value) + " G";
-    els["sword-el"].classList.toggle("broken", s.sword.broken);
-    els["sword-el"].classList.toggle("great", s.sword.great_forged);
-    els["sword-el"].style.display = "block";
+    if (window.ForgeScene) window.ForgeScene.setSword(s.sword);
   } else {
-    els["sword-el"].style.display = "none";
+    els["sword-grade"].style.display = "none";
+    if (window.ForgeScene) window.ForgeScene.setSword(null);
   }
   // Chances bars (per-mille).
   renderChances(s.chances);
@@ -150,8 +152,9 @@ function render() {
   } else {
     hideOverlay();
   }
-  // Fever start sound (edge-triggered).
+  // Fever start sound (edge-triggered) + 3D Fever light.
   if (f.active && !lastFeverActive) sound.playFever();
+  if (window.ForgeScene) window.ForgeScene.setFever(f.active);
   lastFeverActive = f.active;
 }
 
@@ -207,23 +210,6 @@ function popOutcome(text, cls) {
 // ---------------------------------------------------------------------------
 // Actions
 // ---------------------------------------------------------------------------
-function sparkBurst(n) {
-  const layer = els["sparks-layer"];
-  const count = { low: 6, medium: 18, high: 36 }[qualityLevel()] || 18;
-  for (let i = 0; i < Math.min(n, count); i++) {
-    const s = document.createElement("div");
-    s.className = "spark";
-    const angle = Math.random() * Math.PI * 2;
-    const dist = 30 + Math.random() * 90;
-    s.style.left = "50%";
-    s.style.top = "38%";
-    s.style.setProperty("--dx", Math.cos(angle) * dist + "px");
-    s.style.setProperty("--dy", Math.sin(angle) * dist - 30 + "px");
-    layer.appendChild(s);
-    setTimeout(() => s.remove(), 650);
-  }
-}
-
 function qualityLevel() {
   if (!settings) return "medium";
   if (settings.quality === "auto") return "medium";
@@ -234,13 +220,12 @@ async function doStrike() {
   if (striking || !state || state.state !== "playing") return;
   striking = true;
   sound.ensure();
-  els["hammer-el"].classList.add("swing");
-  setTimeout(() => els["hammer-el"].classList.remove("swing"), 220);
+  // 3D hammer swing + spark burst (same 220ms timing as before).
+  if (window.ForgeScene) window.ForgeScene.strike();
   try {
     const payload = await Backend.invoke("strike", {});
     if (!payload) return;
     state = payload.state;
-    sparkBurst(24);
     const o = payload.outcome;
     popOutcome(t(OUTCOME_KEYS[o]), o);
     if (o === "great") sound.playGreat();
@@ -340,12 +325,14 @@ function applySettings() {
   els["brightness-overlay"].style.opacity = String(((100 - settings.brightness) / 100) * 0.7);
   // FPS counter.
   els["fps-counter"].style.display = settings.show_fps ? "block" : "none";
-  // Floor swords.
-  renderFloorSwords(settings.floor_swords);
+  // Floor swords (3D meshes on the floor).
+  if (window.ForgeScene) window.ForgeScene.setFloorSwords(settings.floor_swords);
+  // Particle budget follows the quality setting.
+  if (window.ForgeScene) window.ForgeScene.setQuality(qualityLevel());
   // View mode.
   if (settings.controls === "hub" || settings.lock_on) {
     viewOffset = { x: 0, y: 0 };
-    els["scene-inner"].style.transform = "translate(0px, 0px)";
+    if (window.ForgeScene) window.ForgeScene.setViewOffset(0, 0);
   }
   // Volumes.
   sound.setVolumes(settings.master, settings.music, settings.sfx);
@@ -355,14 +342,7 @@ function applySettings() {
 }
 
 function renderFloorSwords(n) {
-  els["floor-layer"].innerHTML = "";
-  for (let i = 0; i < Math.max(0, Math.min(8, n)); i++) {
-    const s = document.createElement("div");
-    s.className = "floor-sword";
-    s.style.left = (6 + i * 11) + "%";
-    s.style.transform = "rotate(" + (-18 + i * 5) + "deg)";
-    els["floor-layer"].appendChild(s);
-  }
+  if (window.ForgeScene) window.ForgeScene.setFloorSwords(n);
 }
 
 function syncSettingsPanel() {
@@ -486,11 +466,14 @@ function loop(now) {
 }
 
 // ---------------------------------------------------------------------------
-// View drag (controls = free)
+// View drag (controls = free) + click-to-strike (raycast pick in 3D)
 // ---------------------------------------------------------------------------
+let downPos = null;
+
 function bindDrag() {
   const scene = els.scene;
   scene.addEventListener("pointerdown", (e) => {
+    downPos = { x: e.clientX, y: e.clientY };
     if (!settings || settings.controls !== "free" || settings.lock_on) return;
     drag = { x: e.clientX, y: e.clientY, ox: viewOffset.x, oy: viewOffset.y };
     scene.setPointerCapture(e.pointerId);
@@ -499,10 +482,17 @@ function bindDrag() {
     if (!drag) return;
     viewOffset.x = Math.max(-80, Math.min(80, drag.ox + (e.clientX - drag.x)));
     viewOffset.y = Math.max(-40, Math.min(40, drag.oy + (e.clientY - drag.y)));
-    els["scene-inner"].style.transform = `translate(${viewOffset.x}px, ${viewOffset.y}px)`;
+    if (window.ForgeScene) window.ForgeScene.setViewOffset(viewOffset.x, viewOffset.y);
   });
-  scene.addEventListener("pointerup", () => { drag = null; });
-  scene.addEventListener("pointercancel", () => { drag = null; });
+  scene.addEventListener("pointerup", (e) => {
+    // Click (not a drag): raycast-pick the anvil/sword in the 3D scene.
+    if (downPos && Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) < 6) {
+      if (window.ForgeScene && window.ForgeScene.pickAt(e.clientX, e.clientY)) doStrike();
+    }
+    downPos = null;
+    drag = null;
+  });
+  scene.addEventListener("pointercancel", () => { downPos = null; drag = null; });
 }
 
 // ---------------------------------------------------------------------------
@@ -518,11 +508,6 @@ async function boot() {
   els["btn-settings"].addEventListener("click", () => toggleSettings());
   els["overlay-btn-new"].addEventListener("click", doNewRun);
   els["overlay-btn-endless"].addEventListener("click", doEndless);
-  els.scene.addEventListener("click", (e) => {
-    // Clicking the anvil / sword strikes (but not when dragging).
-    if (drag) return;
-    if (e.target.closest(".anvil") || e.target.closest(".sword")) doStrike();
-  });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") toggleSettings();
     if (e.key === " " && els["settings-panel"].style.display !== "flex") {
@@ -536,6 +521,10 @@ async function boot() {
     if (!settings || typeof settings !== "object") settings = defaultSettings();
     settings = { ...defaultSettings(), ...settings };
     state = await Backend.invoke("new_run", {});
+    // 3D scene init (loads the original textures). If WebGL or a texture
+    // is unavailable, show a plain error — never a black window.
+    if (!window.ForgeScene) throw new Error("3D module failed to load (scene3d.js / three)");
+    await window.ForgeScene.init(els.gl);
     els.loading.style.display = "none";
     els.app.style.display = "flex";
     applySettings();

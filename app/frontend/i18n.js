@@ -73,7 +73,7 @@ const I18N = {
   "ui.new_run": { vi: "Chơi lại", en: "New run" },
   "ui.endless_continue": { vi: "Tiếp tục (Endless)", en: "Continue (Endless)" },
   "ui.haptics_note": { vi: "Không có động cơ rung trên PC", en: "No vibration motor on PC" },
-  "ui.quality_note": { vi: "Trên giao diện 2D này, mục này chỉnh mật độ hạt lửa / chuyển động.", en: "On this 2D UI, this controls spark / animation density." },
+  "ui.quality_note": { vi: "Trên giao diện 3D này, mục này chỉnh mật độ hạt lửa / chuyển động.", en: "On this 3D UI, this controls spark / animation density." },
   "ui.loading": { vi: "Đang tải…", en: "Loading…" },
   "ui.error": { vi: "Không tải được giao diện. Hãy khởi động lại.", en: "Could not load the interface. Please restart." },
   "ui.outcome_break": { vi: "GÃY", en: "BREAK" },
