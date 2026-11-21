@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ForgeTax Mobile — Bản làm lại cho PC</title>
+  <!-- R-27 — the original's own title (not a remake name). -->
+  <title>ForgeTax: Blacksmith Legends</title>
   <link rel="icon" href="icon.png">
   <link rel="stylesheet" href="styles.css">
   <script type="importmap">
@@ -17,46 +18,14 @@
   <div id="app" style="display:none">
     <div id="brightness-overlay"></div>
 
-    <header id="topbar">
-      <div class="top-left">
-        <div id="contract-line"></div>
-        <div id="quota-line"></div>
-        <div class="quota-bar"><div id="quota-fill"></div></div>
-      </div>
-      <div class="top-right">
-        <div id="tribute-line"></div>
-        <div id="anger-pips" title="CƠN GIẬN CỦA RỒNG"></div>
-        <button id="btn-settings" type="button">⚙ <span data-i18n="menu2.settings">Cài đặt</span></button>
-      </div>
-    </header>
-
+    <!-- The forge room IS the UI (LAYOUT.md §9): contract/day/quota/grade/
+         value/chances are 3D text on the in-room boards (instrument board,
+         Forge Ledger, Meter_Plaque, Round calendar); strikes/tributes/
+         next-day are in-scene taps (anvil / bell / ledger). No DOM text
+         frames, no action buttons, no topbar gear — ESC opens settings. -->
     <main id="scene">
       <div id="gl"></div>
-      <div id="sword-grade" class="grade-badge" style="display:none">+0</div>
-      <div id="outcome-pop"></div>
     </main>
-
-    <section id="hud">
-      <div class="hud-left">
-        <div id="sword-info">
-          <div id="sword-value"></div>
-          <div id="sword-peak"></div>
-        </div>
-        <div id="chances"></div>
-      </div>
-      <div class="hud-mid">
-        <div id="fever-box">
-          <div id="fever-label"></div>
-          <div class="fever-bar"><div id="fever-fill"></div></div>
-        </div>
-        <div id="relic-chips"></div>
-      </div>
-      <div class="hud-right">
-        <button id="btn-strike" type="button" data-i18n="menu2.key.strike">Đập kiếm trên đe</button>
-        <button id="btn-tribute" type="button" data-i18n="ui.tribute_button">Dâng cống phẩm</button>
-        <button id="btn-endday" type="button" data-i18n="dev.skipDay">Qua ngày kế tiếp</button>
-      </div>
-    </section>
 
     <div id="toast"></div>
     <div id="fps-counter">-- FPS</div>
@@ -98,7 +67,8 @@
           <input type="checkbox" id="set-fps"></label>
 
         <label class="set-row"><span data-i18n="settings.floor_swords">Số kiếm tối đa trên sàn</span>
-          <input type="range" id="set-floor" min="0" max="8" step="1">
+          <!-- R-20: floorSwordLimit 30 (behavior.json settings_defaults). -->
+          <input type="range" id="set-floor" min="0" max="30" step="1">
           <span class="set-val" id="set-floor-val"></span></label>
 
         <fieldset class="set-row">

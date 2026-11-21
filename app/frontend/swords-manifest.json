@@ -1,0 +1,3059 @@
+{
+ "1": {
+  "file": "swords/0001.json",
+  "prefabGo": "0001",
+  "grade": 0,
+  "family": 0,
+  "viName": "Kiếm cũ mòn",
+  "koName": "낡은 검",
+  "bboxMin": [
+   -0.138,
+   -0.07,
+   -0.044
+  ],
+  "bboxMax": [
+   0.138,
+   1.18,
+   0.044
+  ],
+  "verts": 2807,
+  "tris": 1330,
+  "paletteColor": [
+   86,
+   68,
+   56
+  ],
+  "paletteFile": "main-0001_palette.png",
+  "reachable": true
+ },
+ "2": {
+  "file": "swords/0002.json",
+  "prefabGo": "0002",
+  "grade": 6,
+  "family": 0,
+  "viName": "Kiếm sắt dày cộp",
+  "koName": "두꺼운 철검",
+  "bboxMin": [
+   -0.235,
+   -0.107,
+   -0.05
+  ],
+  "bboxMax": [
+   0.235,
+   1.21,
+   0.05
+  ],
+  "verts": 4023,
+  "tris": 1842,
+  "paletteColor": [
+   76,
+   86,
+   101
+  ],
+  "paletteFile": "main-0002_palette.png",
+  "reachable": true
+ },
+ "3": {
+  "file": "swords/0003.json",
+  "prefabGo": "0003",
+  "grade": 8,
+  "family": 0,
+  "viName": "Cánh cửa sắt xách tay",
+  "koName": "휴대용 철문",
+  "bboxMin": [
+   -0.227,
+   -0.086,
+   -0.04
+  ],
+  "bboxMax": [
+   0.227,
+   1.196,
+   0.0598
+  ],
+  "verts": 4619,
+  "tris": 2314,
+  "paletteColor": [
+   68,
+   73,
+   79
+  ],
+  "paletteFile": "main-0003_palette.png",
+  "reachable": true
+ },
+ "4": {
+  "file": "swords/0004.json",
+  "prefabGo": "0004",
+  "grade": 6,
+  "family": 0,
+  "viName": "Cục sắt đang nổi giận",
+  "koName": "성질난 쇳조각",
+  "bboxMin": [
+   -0.2015,
+   -0.06,
+   -0.045
+  ],
+  "bboxMax": [
+   0.16,
+   1.23,
+   0.0364
+  ],
+  "verts": 2951,
+  "tris": 1442,
+  "paletteColor": [
+   112,
+   117,
+   127
+  ],
+  "paletteFile": "main-0004_palette.png",
+  "reachable": true
+ },
+ "5": {
+  "file": "swords/0005.json",
+  "prefabGo": "0005",
+  "grade": 8,
+  "family": 0,
+  "viName": "Lưỡi kiếm hay cắn",
+  "koName": "물어뜯는 검",
+  "bboxMin": [
+   -0.21,
+   -0.07,
+   -0.04
+  ],
+  "bboxMax": [
+   0.21,
+   1.2,
+   0.04
+  ],
+  "verts": 2488,
+  "tris": 1130,
+  "paletteColor": [
+   91,
+   96,
+   107
+  ],
+  "paletteFile": "main-0005_palette.png",
+  "reachable": true
+ },
+ "6": {
+  "file": "swords/0006.json",
+  "prefabGo": "0006",
+  "grade": 6,
+  "family": 0,
+  "viName": "Mảnh phép thuật",
+  "koName": "마력의 파편",
+  "bboxMin": [
+   -0.26,
+   -0.092,
+   -0.034
+  ],
+  "bboxMax": [
+   0.26,
+   1.28,
+   0.0366
+  ],
+  "verts": 4200,
+  "tris": 2112,
+  "paletteColor": [
+   140,
+   153,
+   168
+  ],
+  "paletteFile": "main-0006_palette.png",
+  "reachable": true
+ },
+ "7": {
+  "file": "swords/0007.json",
+  "prefabGo": "0007",
+  "grade": 8,
+  "family": 0,
+  "viName": "Lưỡi kiếm thức tỉnh",
+  "koName": "각성의 검",
+  "bboxMin": [
+   -0.29,
+   -0.092,
+   -0.036
+  ],
+  "bboxMax": [
+   0.29,
+   1.26,
+   0.0366
+  ],
+  "verts": 5250,
+  "tris": 2792,
+  "paletteColor": [
+   140,
+   153,
+   168
+  ],
+  "paletteFile": "main-0007_palette.png",
+  "reachable": true
+ },
+ "9": {
+  "file": "swords/0009.json",
+  "prefabGo": "0009",
+  "grade": 14,
+  "family": 1,
+  "viName": "Cổng thành bị giật khỏi bản lề",
+  "koName": "통째로 뜯어낸 성문",
+  "bboxMin": [
+   -0.292,
+   -0.182,
+   -0.044
+  ],
+  "bboxMax": [
+   0.292,
+   1.2272,
+   0.054
+  ],
+  "verts": 8468,
+  "tris": 3906,
+  "paletteColor": [
+   64,
+   37,
+   18
+  ],
+  "paletteFile": "main-0009_palette.png",
+  "reachable": true
+ },
+ "10": {
+  "file": "swords/0010.json",
+  "prefabGo": "0010",
+  "grade": 16,
+  "family": 1,
+  "viName": "Pháo đài có chuôi",
+  "koName": "손잡이 달린 요새",
+  "bboxMin": [
+   -0.483,
+   -0.18,
+   -0.0531
+  ],
+  "bboxMax": [
+   0.222,
+   1.336,
+   0.0531
+  ],
+  "verts": 7984,
+  "tris": 4086,
+  "paletteColor": [
+   158,
+   140,
+   109
+  ],
+  "paletteFile": "main-0010_palette.png",
+  "reachable": true
+ },
+ "11": {
+  "file": "swords/0011.json",
+  "prefabGo": "0011",
+  "grade": 18,
+  "family": 1,
+  "viName": "Thành trì nghiền núi",
+  "koName": "산맥을 짓누르는 성채",
+  "bboxMin": [
+   -0.6025,
+   -0.21,
+   -0.059
+  ],
+  "bboxMax": [
+   0.3943,
+   1.484,
+   0.059
+  ],
+  "verts": 11171,
+  "tris": 5864,
+  "paletteColor": [
+   122,
+   112,
+   96
+  ],
+  "paletteFile": "main-0011_palette.png",
+  "reachable": true
+ },
+ "12": {
+  "file": "swords/0012.json",
+  "prefabGo": "0012",
+  "grade": 20,
+  "family": 1,
+  "viName": "Thành trì sắt chẻ lục địa",
+  "koName": "대륙을 가르는 철의 성채",
+  "bboxMin": [
+   -0.7953,
+   -0.26,
+   -0.0702
+  ],
+  "bboxMax": [
+   0.412,
+   1.8749,
+   0.0702
+  ],
+  "verts": 17028,
+  "tris": 8746,
+  "paletteColor": [
+   61,
+   61,
+   68
+  ],
+  "paletteFile": "main-0012_palette.png",
+  "reachable": true
+ },
+ "14": {
+  "file": "swords/0014.json",
+  "prefabGo": "0014",
+  "grade": 14,
+  "family": 2,
+  "viName": "Kiếm Bình Minh",
+  "koName": "어둠을 가르는 서광의 검",
+  "bboxMin": [
+   -0.2767,
+   -0.13,
+   -0.058
+  ],
+  "bboxMax": [
+   0.2767,
+   1.39,
+   0.0706
+  ],
+  "verts": 6477,
+  "tris": 3746,
+  "paletteColor": [
+   168,
+   178,
+   203
+  ],
+  "paletteFile": "main-0014_palette.png",
+  "reachable": true
+ },
+ "15": {
+  "file": "swords/0015.json",
+  "prefabGo": "0015",
+  "grade": 16,
+  "family": 2,
+  "viName": "Kiếm của vị vua xứng đáng",
+  "koName": "왕의 자격을 묻는 성검",
+  "bboxMin": [
+   -0.2466,
+   -0.13,
+   -0.1833
+  ],
+  "bboxMax": [
+   0.2466,
+   1.48,
+   0.1662
+  ],
+  "verts": 7533,
+  "tris": 4408,
+  "paletteColor": [
+   168,
+   178,
+   203
+  ],
+  "paletteFile": "main-0015_palette.png",
+  "reachable": true
+ },
+ "16": {
+  "file": "swords/0016.json",
+  "prefabGo": "0016",
+  "grade": 18,
+  "family": 2,
+  "viName": "Kiếm của bình minh đã hứa",
+  "koName": "새벽을 여는 약속의 성검",
+  "bboxMin": [
+   -0.3464,
+   -0.13,
+   -0.104
+  ],
+  "bboxMax": [
+   0.3464,
+   1.5,
+   0.0706
+  ],
+  "verts": 8097,
+  "tris": 4822,
+  "paletteColor": [
+   168,
+   178,
+   203
+  ],
+  "paletteFile": "main-0016_palette.png",
+  "reachable": true
+ },
+ "17": {
+  "file": "swords/0017.json",
+  "prefabGo": "0017",
+  "grade": 20,
+  "family": 2,
+  "viName": "Excalibur",
+  "koName": "엑스칼리버",
+  "bboxMin": [
+   -0.5573,
+   -0.135,
+   -0.116
+  ],
+  "bboxMax": [
+   0.5573,
+   1.56,
+   0.0706
+  ],
+  "verts": 13105,
+  "tris": 7574,
+  "paletteColor": [
+   178,
+   191,
+   219
+  ],
+  "paletteFile": "main-0017_palette.png",
+  "reachable": true
+ },
+ "19": {
+  "file": "swords/0019.json",
+  "prefabGo": "0019",
+  "grade": 14,
+  "family": 3,
+  "viName": "Cưa thép răng ăn khớp",
+  "koName": "맞물려 도는 강철 톱검",
+  "bboxMin": [
+   -0.2522,
+   -0.1325,
+   -0.0448
+  ],
+  "bboxMax": [
+   0.2522,
+   1.4645,
+   0.0527
+  ],
+  "verts": 7660,
+  "tris": 4122,
+  "paletteColor": [
+   19,
+   19,
+   21
+  ],
+  "paletteFile": "main-0019_palette.png",
+  "reachable": true
+ },
+ "20": {
+  "file": "swords/0020.json",
+  "prefabGo": "0020",
+  "grade": 16,
+  "family": 3,
+  "viName": "Máy nghiền thép",
+  "koName": "강철을 갈아먹는 분쇄검",
+  "bboxMin": [
+   -0.2765,
+   -0.14,
+   -0.0448
+  ],
+  "bboxMax": [
+   0.2765,
+   1.5074,
+   0.054
+  ],
+  "verts": 8448,
+  "tris": 4574,
+  "paletteColor": [
+   19,
+   19,
+   21
+  ],
+  "paletteFile": "main-0020_palette.png",
+  "reachable": true
+ },
+ "21": {
+  "file": "swords/0021.json",
+  "prefabGo": "0021",
+  "grade": 18,
+  "family": 3,
+  "viName": "Cưa xẻ núi",
+  "koName": "산맥을 깎는 절단기",
+  "bboxMin": [
+   -0.3052,
+   -0.1475,
+   -0.0448
+  ],
+  "bboxMax": [
+   0.3052,
+   1.5509,
+   0.0556
+  ],
+  "verts": 10140,
+  "tris": 5458,
+  "paletteColor": [
+   19,
+   19,
+   21
+  ],
+  "paletteFile": "main-0021_palette.png",
+  "reachable": true
+ },
+ "22": {
+  "file": "swords/0022.json",
+  "prefabGo": "0022",
+  "grade": 20,
+  "family": 3,
+  "viName": "Bánh răng hủy diệt không thể ngăn",
+  "koName": "멈추지 않는 파멸의 톱니",
+  "bboxMin": [
+   -0.3266,
+   -0.155,
+   -0.0448
+  ],
+  "bboxMax": [
+   0.3266,
+   1.5848,
+   0.0628
+  ],
+  "verts": 11314,
+  "tris": 6396,
+  "paletteColor": [
+   19,
+   19,
+   21
+  ],
+  "paletteFile": "main-0022_palette.png",
+  "reachable": true
+ },
+ "24": {
+  "file": "swords/0024.json",
+  "prefabGo": "0024",
+  "grade": 14,
+  "family": 4,
+  "viName": "Kiếm rồng dựng vảy",
+  "koName": "역린을 세운 용검",
+  "bboxMin": [
+   -0.3,
+   -0.19,
+   -0.056
+  ],
+  "bboxMax": [
+   0.3,
+   1.52,
+   0.072
+  ],
+  "verts": 4848,
+  "tris": 2548,
+  "paletteColor": [
+   21,
+   20,
+   21
+  ],
+  "paletteFile": "main-0024_palette.png",
+  "reachable": true
+ },
+ "25": {
+  "file": "swords/0025.json",
+  "prefabGo": "0025",
+  "grade": 16,
+  "family": 4,
+  "viName": "Kiếm wyvern có cánh",
+  "koName": "날개를 펼친 비룡검",
+  "bboxMin": [
+   -0.579,
+   -0.195,
+   -0.056
+  ],
+  "bboxMax": [
+   0.579,
+   1.58,
+   0.072
+  ],
+  "verts": 5868,
+  "tris": 3206,
+  "paletteColor": [
+   21,
+   20,
+   21
+  ],
+  "paletteFile": "main-0025_palette.png",
+  "reachable": true
+ },
+ "26": {
+  "file": "swords/0026.json",
+  "prefabGo": "0026",
+  "grade": 18,
+  "family": 4,
+  "viName": "Kiếm hơi thở Long Vương",
+  "koName": "용왕의 숨결을 두른 검",
+  "bboxMin": [
+   -0.617,
+   -0.18,
+   -0.061
+  ],
+  "bboxMax": [
+   0.617,
+   1.66,
+   0.072
+  ],
+  "verts": 6615,
+  "tris": 3600,
+  "paletteColor": [
+   21,
+   20,
+   21
+  ],
+  "paletteFile": "main-0026_palette.png",
+  "reachable": true
+ },
+ "27": {
+  "file": "swords/0027.json",
+  "prefabGo": "0027",
+  "grade": 20,
+  "family": 4,
+  "viName": "Ma kiếm: Diệt Long",
+  "koName": "마검 : 드레곤슬레이어",
+  "bboxMin": [
+   -0.6866,
+   -0.16,
+   -0.0625
+  ],
+  "bboxMax": [
+   0.6866,
+   1.72,
+   0.072
+  ],
+  "verts": 7820,
+  "tris": 4190,
+  "paletteColor": [
+   21,
+   20,
+   21
+  ],
+  "paletteFile": "main-0027_palette.png",
+  "reachable": true
+ },
+ "29": {
+  "file": "swords/0029.json",
+  "prefabGo": "0029",
+  "grade": 14,
+  "family": 5,
+  "viName": "Kiếm quá tải",
+  "koName": "마력 과충전검",
+  "bboxMin": [
+   -0.366,
+   -0.13,
+   -0.1651
+  ],
+  "bboxMax": [
+   0.366,
+   1.42,
+   0.1651
+  ],
+  "verts": 6630,
+  "tris": 4256,
+  "paletteColor": [
+   17,
+   20,
+   28
+  ],
+  "paletteFile": "main-0029_palette.png",
+  "reachable": true
+ },
+ "30": {
+  "file": "swords/0030.json",
+  "prefabGo": "0030",
+  "grade": 16,
+  "family": 5,
+  "viName": "Cỗ máy bí thuật của Đại pháp sư",
+  "koName": "대마법사의 마력기관",
+  "bboxMin": [
+   -0.375,
+   -0.13,
+   -0.1763
+  ],
+  "bboxMax": [
+   0.375,
+   1.46,
+   0.1763
+  ],
+  "verts": 7302,
+  "tris": 4776,
+  "paletteColor": [
+   17,
+   20,
+   28
+  ],
+  "paletteFile": "main-0030_palette.png",
+  "reachable": true
+ },
+ "31": {
+  "file": "swords/0031.json",
+  "prefabGo": "0031",
+  "grade": 18,
+  "family": 5,
+  "viName": "Kiếm xé toạc thực tại",
+  "koName": "현실에 금을 내는 검",
+  "bboxMin": [
+   -0.42,
+   -0.13,
+   -0.1846
+  ],
+  "bboxMax": [
+   0.42,
+   1.48,
+   0.1846
+  ],
+  "verts": 9294,
+  "tris": 6032,
+  "paletteColor": [
+   17,
+   20,
+   28
+  ],
+  "paletteFile": "main-0031_palette.png",
+  "reachable": true
+ },
+ "32": {
+  "file": "swords/0032.json",
+  "prefabGo": "0032",
+  "grade": 20,
+  "family": 5,
+  "viName": "Akasha, Kiếm Khai Sinh",
+  "koName": "아카샤 · 창세를 품은 검",
+  "bboxMin": [
+   -0.522,
+   -0.15,
+   -0.2352
+  ],
+  "bboxMax": [
+   0.522,
+   1.57,
+   0.1828
+  ],
+  "verts": 9712,
+  "tris": 6176,
+  "paletteColor": [
+   140,
+   145,
+   163
+  ],
+  "paletteFile": "main-0032_palette.png",
+  "reachable": true
+ },
+ "34": {
+  "file": "swords/0034.json",
+  "prefabGo": "0034",
+  "grade": 14,
+  "family": 6,
+  "viName": "Kiếm ra lệnh cho các kiếm",
+  "koName": "검을 거느리는 검",
+  "bboxMin": [
+   -0.3711,
+   -0.085,
+   -0.036
+  ],
+  "bboxMax": [
+   0.3711,
+   1.38,
+   0.043
+  ],
+  "verts": 5043,
+  "tris": 2890,
+  "paletteColor": [
+   107,
+   114,
+   127
+  ],
+  "paletteFile": "main-0034_palette.png",
+  "reachable": true
+ },
+ "35": {
+  "file": "swords/0035.json",
+  "prefabGo": "0035",
+  "grade": 16,
+  "family": 6,
+  "viName": "Kiếm trơ trẽn",
+  "koName": "양심 없는 검",
+  "bboxMin": [
+   -0.4735,
+   -0.065,
+   -0.036
+  ],
+  "bboxMax": [
+   0.4421,
+   1.42,
+   0.059
+  ],
+  "verts": 6985,
+  "tris": 4270,
+  "paletteColor": [
+   107,
+   114,
+   127
+  ],
+  "paletteFile": "main-0035_palette.png",
+  "reachable": true
+ },
+ "36": {
+  "file": "swords/0036.json",
+  "prefabGo": "0036",
+  "grade": 18,
+  "family": 6,
+  "viName": "Chúa tể ngàn kiếm",
+  "koName": "천검을 거느린 군주",
+  "bboxMin": [
+   -0.4202,
+   -0.065,
+   -0.0928
+  ],
+  "bboxMax": [
+   0.4202,
+   1.47,
+   0.0567
+  ],
+  "verts": 10027,
+  "tris": 6434,
+  "paletteColor": [
+   107,
+   114,
+   127
+  ],
+  "paletteFile": "main-0036_palette.png",
+  "reachable": true
+ },
+ "37": {
+  "file": "swords/0037.json",
+  "prefabGo": "0037",
+  "grade": 20,
+  "family": 6,
+  "viName": "Quân vương của các lưỡi kiếm",
+  "koName": "이기어검(以氣馭劍)",
+  "bboxMin": [
+   -0.4772,
+   -0.055,
+   -0.1038
+  ],
+  "bboxMax": [
+   0.4772,
+   1.52,
+   0.0408
+  ],
+  "verts": 13359,
+  "tris": 7722,
+  "paletteColor": [
+   107,
+   114,
+   127
+  ],
+  "paletteFile": "main-0037_palette.png",
+  "reachable": true
+ },
+ "38": {
+  "file": "swords/0038.json",
+  "prefabGo": "0038",
+  "grade": 2,
+  "family": 0,
+  "viName": "Kiếm đã tôi luyện",
+  "koName": "다듬은 검",
+  "bboxMin": [
+   -0.205,
+   -0.095,
+   -0.05
+  ],
+  "bboxMax": [
+   0.205,
+   1.29,
+   0.05
+  ],
+  "verts": 3025,
+  "tris": 1856,
+  "paletteColor": [
+   140,
+   142,
+   147
+  ],
+  "paletteFile": "main-0038_palette.png",
+  "reachable": true
+ },
+ "39": {
+  "file": "swords/0039.json",
+  "prefabGo": "0039",
+  "grade": 4,
+  "family": 0,
+  "viName": "Kiếm sắt tạm ổn",
+  "koName": "쓸 만한 철검",
+  "bboxMin": [
+   -0.31,
+   -0.1,
+   -0.036
+  ],
+  "bboxMax": [
+   0.31,
+   1.31,
+   0.034
+  ],
+  "verts": 4147,
+  "tris": 2418,
+  "paletteColor": [
+   158,
+   160,
+   168
+  ],
+  "paletteFile": "main-0039_palette.png",
+  "reachable": true
+ },
+ "40": {
+  "file": "swords/0040.json",
+  "prefabGo": "0040",
+  "grade": 12,
+  "family": 1,
+  "viName": "Đại kiếm hai lớp giáp",
+  "koName": "이중 철판 대검",
+  "bboxMin": [
+   -0.235,
+   -0.13,
+   -0.056
+  ],
+  "bboxMax": [
+   0.235,
+   1.5,
+   0.056
+  ],
+  "verts": 4338,
+  "tris": 2518,
+  "paletteColor": [
+   127,
+   129,
+   135
+  ],
+  "paletteFile": "main-0040_palette.png",
+  "reachable": true
+ },
+ "41": {
+  "file": "swords/0041.json",
+  "prefabGo": "0041",
+  "grade": 12,
+  "family": 2,
+  "viName": "Kiếm được ban phước",
+  "koName": "축복이 새겨진 검",
+  "bboxMin": [
+   -0.33,
+   -0.118,
+   -0.05
+  ],
+  "bboxMax": [
+   0.33,
+   1.4,
+   0.065
+  ],
+  "verts": 7112,
+  "tris": 4326,
+  "paletteColor": [
+   158,
+   163,
+   175
+  ],
+  "paletteFile": "main-0041_palette.png",
+  "reachable": true
+ },
+ "42": {
+  "file": "swords/0042.json",
+  "prefabGo": "0042",
+  "grade": 12,
+  "family": 3,
+  "viName": "Cưa nhai giáp",
+  "koName": "철판도 씹는 톱검",
+  "bboxMin": [
+   -0.2046,
+   -0.1,
+   -0.06
+  ],
+  "bboxMax": [
+   0.2046,
+   1.385,
+   0.06
+  ],
+  "verts": 6155,
+  "tris": 3630,
+  "paletteColor": [
+   127,
+   129,
+   137
+  ],
+  "paletteFile": "main-0042_palette.png",
+  "reachable": true
+ },
+ "43": {
+  "file": "swords/0043.json",
+  "prefabGo": "0043",
+  "grade": 12,
+  "family": 4,
+  "viName": "Kiếm vảy rồng",
+  "koName": "용의 비늘을 두른 검",
+  "bboxMin": [
+   -0.31,
+   -0.1,
+   -0.0543
+  ],
+  "bboxMax": [
+   0.31,
+   1.46,
+   0.0543
+  ],
+  "verts": 4030,
+  "tris": 2496,
+  "paletteColor": [
+   127,
+   127,
+   132
+  ],
+  "paletteFile": "main-0043_palette.png",
+  "reachable": true
+ },
+ "44": {
+  "file": "swords/0044.json",
+  "prefabGo": "0044",
+  "grade": 12,
+  "family": 5,
+  "viName": "Kiếm rune thức tỉnh",
+  "koName": "깨어나는 마력의 룬검",
+  "bboxMin": [
+   -0.27,
+   -0.13,
+   -0.06
+  ],
+  "bboxMax": [
+   0.27,
+   1.4,
+   0.06
+  ],
+  "verts": 4856,
+  "tris": 3398,
+  "paletteColor": [
+   17,
+   20,
+   28
+  ],
+  "paletteFile": "main-0044_palette.png",
+  "reachable": true
+ },
+ "45": {
+  "file": "swords/0045.json",
+  "prefabGo": "0045",
+  "grade": 12,
+  "family": 6,
+  "viName": "Kiếm ghét ở một mình",
+  "koName": "혼자 있기 싫은 검",
+  "bboxMin": [
+   -0.3215,
+   -0.085,
+   -0.036
+  ],
+  "bboxMax": [
+   0.2848,
+   1.33,
+   0.0435
+  ],
+  "verts": 4203,
+  "tris": 2462,
+  "paletteColor": [
+   107,
+   114,
+   127
+  ],
+  "paletteFile": "main-0045_palette.png",
+  "reachable": true
+ },
+ "46": {
+  "file": "swords/0046.json",
+  "prefabGo": "0046",
+  "grade": 10,
+  "family": 7,
+  "viName": "Đại kiếm hơi nước bị rò",
+  "koName": "김 새는 증기 대검",
+  "bboxMin": [
+   -0.19,
+   -0.1562,
+   -0.055
+  ],
+  "bboxMax": [
+   0.19,
+   1.44,
+   0.0831
+  ],
+  "verts": 6089,
+  "tris": 3952,
+  "paletteColor": [
+   91,
+   94,
+   99
+  ],
+  "paletteFile": "main-0046_palette.png",
+  "reachable": true
+ },
+ "47": {
+  "file": "swords/0047.json",
+  "prefabGo": "0047",
+  "grade": 12,
+  "family": 7,
+  "viName": "Đại kiếm chạy bằng pít-tông",
+  "koName": "피스톤 달린 대검",
+  "bboxMin": [
+   -0.27,
+   -0.167,
+   -0.0605
+  ],
+  "bboxMax": [
+   0.212,
+   1.5,
+   0.072
+  ],
+  "verts": 5508,
+  "tris": 3496,
+  "paletteColor": [
+   91,
+   94,
+   99
+  ],
+  "paletteFile": "main-0047_palette.png",
+  "reachable": true
+ },
+ "48": {
+  "file": "swords/0048.json",
+  "prefabGo": "0048",
+  "grade": 14,
+  "family": 7,
+  "viName": "Kiếm đeo nồi hơi",
+  "koName": "보일러를 업은 검",
+  "bboxMin": [
+   -0.4446,
+   -0.1778,
+   -0.0875
+  ],
+  "bboxMax": [
+   0.224,
+   1.56,
+   0.096
+  ],
+  "verts": 8080,
+  "tris": 4932,
+  "paletteColor": [
+   91,
+   94,
+   99
+  ],
+  "paletteFile": "main-0048_palette.png",
+  "reachable": true
+ },
+ "49": {
+  "file": "swords/0049.json",
+  "prefabGo": "0049",
+  "grade": 16,
+  "family": 7,
+  "viName": "Kiếm đầu máy huýt còi",
+  "koName": "기적을 울리는 기관검",
+  "bboxMin": [
+   -0.3935,
+   -0.1422,
+   -0.078
+  ],
+  "bboxMax": [
+   0.2,
+   1.46,
+   0.0855
+  ],
+  "verts": 8433,
+  "tris": 4984,
+  "paletteColor": [
+   40,
+   43,
+   48
+  ],
+  "paletteFile": "main-0049_palette.png",
+  "reachable": true
+ },
+ "50": {
+  "file": "swords/0050.json",
+  "prefabGo": "0050",
+  "grade": 18,
+  "family": 7,
+  "viName": "Cự kiếm hơi nước trải đường ray",
+  "koName": "철로를 까는 증기 거검",
+  "bboxMin": [
+   -0.4594,
+   -0.1528,
+   -0.084
+  ],
+  "bboxMax": [
+   0.2219,
+   1.5651,
+   0.098
+  ],
+  "verts": 12149,
+  "tris": 7324,
+  "paletteColor": [
+   40,
+   43,
+   48
+  ],
+  "paletteFile": "main-0050_palette.png",
+  "reachable": true
+ },
+ "51": {
+  "file": "swords/0051.json",
+  "prefabGo": "0051",
+  "grade": 20,
+  "family": 7,
+  "viName": "Hơi Nước Vương: Cỗ máy vĩnh cửu",
+  "koName": "증기왕 : 무한기관",
+  "bboxMin": [
+   -0.4844,
+   -0.1528,
+   -0.084
+  ],
+  "bboxMax": [
+   0.2324,
+   1.62,
+   0.1438
+  ],
+  "verts": 13068,
+  "tris": 8502,
+  "paletteColor": [
+   40,
+   43,
+   48
+  ],
+  "paletteFile": "main-0051_palette.png",
+  "reachable": true
+ },
+ "52": {
+  "file": "swords/0052.json",
+  "prefabGo": "0052",
+  "grade": 10,
+  "family": 8,
+  "viName": "Kiếm đóng sương giá",
+  "koName": "서리 낀 검",
+  "bboxMin": [
+   -0.235,
+   -0.13,
+   -0.038
+  ],
+  "bboxMax": [
+   0.235,
+   1.33,
+   0.0488
+  ],
+  "verts": 6094,
+  "tris": 3434,
+  "paletteColor": [
+   117,
+   135,
+   158
+  ],
+  "paletteFile": "main-0052_palette.png",
+  "reachable": true
+ },
+ "53": {
+  "file": "swords/0053.json",
+  "prefabGo": "0053",
+  "grade": 12,
+  "family": 8,
+  "viName": "Kiếm lưỡi cột băng",
+  "koName": "고드름 날 검",
+  "bboxMin": [
+   -0.3194,
+   -0.14,
+   -0.04
+  ],
+  "bboxMax": [
+   0.3255,
+   1.4088,
+   0.0519
+  ],
+  "verts": 7723,
+  "tris": 4848,
+  "paletteColor": [
+   147,
+   163,
+   183
+  ],
+  "paletteFile": "main-0053_palette.png",
+  "reachable": true
+ },
+ "54": {
+  "file": "swords/0054.json",
+  "prefabGo": "0054",
+  "grade": 14,
+  "family": 8,
+  "viName": "Kiếm gọi bão tuyết",
+  "koName": "눈보라를 부르는 검",
+  "bboxMin": [
+   -0.3674,
+   -0.15,
+   -0.1536
+  ],
+  "bboxMax": [
+   0.3674,
+   1.38,
+   0.1536
+  ],
+  "verts": 6722,
+  "tris": 4136,
+  "paletteColor": [
+   147,
+   163,
+   183
+  ],
+  "paletteFile": "main-0054_palette.png",
+  "reachable": true
+ },
+ "55": {
+  "file": "swords/0055.json",
+  "prefabGo": "0055",
+  "grade": 16,
+  "family": 8,
+  "viName": "Đại kiếm đẽo từ sông băng",
+  "koName": "빙하를 깎아낸 대검",
+  "bboxMin": [
+   -0.438,
+   -0.16,
+   -0.0525
+  ],
+  "bboxMax": [
+   0.438,
+   1.42,
+   0.071
+  ],
+  "verts": 6175,
+  "tris": 3488,
+  "paletteColor": [
+   68,
+   126,
+   222
+  ],
+  "paletteFile": "main-0055_palette.png",
+  "reachable": true
+ },
+ "56": {
+  "file": "swords/0056.json",
+  "prefabGo": "0056",
+  "grade": 18,
+  "family": 8,
+  "viName": "Kiếm băng không bao giờ tan",
+  "koName": "영원히 녹지 않는 빙검",
+  "bboxMin": [
+   -0.3782,
+   -0.17,
+   -0.0809
+  ],
+  "bboxMax": [
+   0.3782,
+   1.5,
+   0.092
+  ],
+  "verts": 6208,
+  "tris": 3736,
+  "paletteColor": [
+   33,
+   83,
+   193
+  ],
+  "paletteFile": "main-0056_palette.png",
+  "reachable": true
+ },
+ "57": {
+  "file": "swords/0057.json",
+  "prefabGo": "0057",
+  "grade": 20,
+  "family": 8,
+  "viName": "Băng kiếm: Độ không tuyệt đối",
+  "koName": "빙결검 : 절대영도",
+  "bboxMin": [
+   -0.4724,
+   -0.19,
+   -0.0947
+  ],
+  "bboxMax": [
+   0.4724,
+   1.54,
+   0.0715
+  ],
+  "verts": 11422,
+  "tris": 6654,
+  "paletteColor": [
+   12,
+   16,
+   22
+  ],
+  "paletteFile": "main-0057_palette.png",
+  "reachable": true
+ },
+ "58": {
+  "file": "swords/0058.json",
+  "prefabGo": "0058",
+  "grade": 10,
+  "family": 9,
+  "viName": "Kiếm có khúc xương mắc trong",
+  "koName": "뼈다귀 박힌 검",
+  "bboxMin": [
+   -0.2311,
+   -0.186,
+   -0.0892
+  ],
+  "bboxMax": [
+   0.2311,
+   1.29,
+   0.0892
+  ],
+  "verts": 6630,
+  "tris": 3458,
+  "paletteColor": [
+   126,
+   100,
+   69
+  ],
+  "paletteFile": "main-0058_palette.png",
+  "reachable": true
+ },
+ "59": {
+  "file": "swords/0059.json",
+  "prefabGo": "0059",
+  "grade": 12,
+  "family": 9,
+  "viName": "Cưa răng thú",
+  "koName": "짐승 이빨 톱검",
+  "bboxMin": [
+   -0.26,
+   -0.1947,
+   -0.055
+  ],
+  "bboxMax": [
+   0.26,
+   1.34,
+   0.059
+  ],
+  "verts": 6409,
+  "tris": 3696,
+  "paletteColor": [
+   92,
+   71,
+   49
+  ],
+  "paletteFile": "main-0059_palette.png",
+  "reachable": true
+ },
+ "60": {
+  "file": "swords/0060.json",
+  "prefabGo": "0060",
+  "grade": 14,
+  "family": 9,
+  "viName": "Kiếm sống lưng gầm gừ",
+  "koName": "으르렁대는 척추검",
+  "bboxMin": [
+   -0.2612,
+   -0.248,
+   -0.0608
+  ],
+  "bboxMax": [
+   0.2612,
+   1.36,
+   0.0761
+  ],
+  "verts": 7808,
+  "tris": 4198,
+  "paletteColor": [
+   88,
+   68,
+   46
+  ],
+  "paletteFile": "main-0060_palette.png",
+  "reachable": true
+ },
+ "61": {
+  "file": "swords/0061.json",
+  "prefabGo": "0061",
+  "grade": 16,
+  "family": 9,
+  "viName": "Đại kiếm xương sườn quái thú",
+  "koName": "거수의 갈비뼈 대검",
+  "bboxMin": [
+   -0.4,
+   -0.2765,
+   -0.0684
+  ],
+  "bboxMax": [
+   0.4,
+   1.5,
+   0.0856
+  ],
+  "verts": 8150,
+  "tris": 4284,
+  "paletteColor": [
+   119,
+   93,
+   64
+  ],
+  "paletteFile": "main-0061_palette.png",
+  "reachable": true
+ },
+ "62": {
+  "file": "swords/0062.json",
+  "prefabGo": "0062",
+  "grade": 18,
+  "family": 9,
+  "viName": "Kiếm đầu lâu biết chọn con mồi",
+  "koName": "먹잇감을 고르는 해골검",
+  "bboxMin": [
+   -0.465,
+   -0.1599,
+   -0.1464
+  ],
+  "bboxMax": [
+   0.2608,
+   1.74,
+   0.1464
+  ],
+  "verts": 10601,
+  "tris": 5650,
+  "paletteColor": [
+   82,
+   63,
+   43
+  ],
+  "paletteFile": "main-0062_palette.png",
+  "reachable": true
+ },
+ "63": {
+  "file": "swords/0063.json",
+  "prefabGo": "0063",
+  "grade": 20,
+  "family": 9,
+  "viName": "Tủy kiếm: Kẻ săn mồi nguyên thủy",
+  "koName": "골수검 : 태고의 포식자",
+  "bboxMin": [
+   -0.5763,
+   -0.1904,
+   -0.3116
+  ],
+  "bboxMax": [
+   0.4166,
+   1.9709,
+   0.3201
+  ],
+  "verts": 12862,
+  "tris": 6808,
+  "paletteColor": [
+   86,
+   66,
+   45
+  ],
+  "paletteFile": "main-0063_palette.png",
+  "reachable": true
+ },
+ "64": {
+  "file": "swords/0064.json",
+  "prefabGo": "0064",
+  "grade": 10,
+  "family": 10,
+  "viName": "Kiếm tích tĩnh điện",
+  "koName": "정전기 오른 검",
+  "bboxMin": [
+   -0.2032,
+   -0.117,
+   -0.07
+  ],
+  "bboxMax": [
+   0.2032,
+   1.34,
+   0.07
+  ],
+  "verts": 6457,
+  "tris": 4444,
+  "paletteColor": [
+   107,
+   117,
+   140
+  ],
+  "paletteFile": "main-0064_palette.png",
+  "reachable": true
+ },
+ "65": {
+  "file": "swords/0065.json",
+  "prefabGo": "0065",
+  "grade": 12,
+  "family": 10,
+  "viName": "Kiếm bị sét đánh",
+  "koName": "벼락 맞은 검",
+  "bboxMin": [
+   -0.2752,
+   -0.144,
+   -0.1177
+  ],
+  "bboxMax": [
+   0.2752,
+   1.3,
+   0.1177
+  ],
+  "verts": 8304,
+  "tris": 4716,
+  "paletteColor": [
+   16,
+   19,
+   25
+  ],
+  "paletteFile": "main-0065_palette.png",
+  "reachable": true
+ },
+ "66": {
+  "file": "swords/0066.json",
+  "prefabGo": "0066",
+  "grade": 14,
+  "family": 10,
+  "viName": "Kiếm chứa sấm",
+  "koName": "천둥을 머금은 검",
+  "bboxMin": [
+   -0.3071,
+   -0.144,
+   -0.1333
+  ],
+  "bboxMax": [
+   0.3071,
+   1.35,
+   0.1333
+  ],
+  "verts": 8896,
+  "tris": 5020,
+  "paletteColor": [
+   16,
+   19,
+   25
+  ],
+  "paletteFile": "main-0066_palette.png",
+  "reachable": true
+ },
+ "67": {
+  "file": "swords/0067.json",
+  "prefabGo": "0067",
+  "grade": 16,
+  "family": 10,
+  "viName": "Kiếm kéo lê cơn bão",
+  "koName": "폭풍을 끌고 다니는 검",
+  "bboxMin": [
+   -0.3284,
+   -0.144,
+   -0.1422
+  ],
+  "bboxMax": [
+   0.3284,
+   1.38,
+   0.1422
+  ],
+  "verts": 9424,
+  "tris": 5516,
+  "paletteColor": [
+   16,
+   19,
+   25
+  ],
+  "paletteFile": "main-0067_palette.png",
+  "reachable": true
+ },
+ "68": {
+  "file": "swords/0068.json",
+  "prefabGo": "0068",
+  "grade": 18,
+  "family": 10,
+  "viName": "Kiếm Lôi thần xé trời",
+  "koName": "하늘을 찢는 뇌신검",
+  "bboxMin": [
+   -0.3623,
+   -0.144,
+   -0.151
+  ],
+  "bboxMax": [
+   0.3623,
+   1.41,
+   0.151
+  ],
+  "verts": 13032,
+  "tris": 7968,
+  "paletteColor": [
+   16,
+   19,
+   25
+  ],
+  "paletteFile": "main-0068_palette.png",
+  "reachable": true
+ },
+ "69": {
+  "file": "swords/0069.json",
+  "prefabGo": "0069",
+  "grade": 20,
+  "family": 10,
+  "viName": "Lôi kiếm: Thiên phạt",
+  "koName": "뇌검 : 천벌",
+  "bboxMin": [
+   -0.3905,
+   -0.144,
+   -0.1598
+  ],
+  "bboxMax": [
+   0.3905,
+   1.44,
+   0.1598
+  ],
+  "verts": 13576,
+  "tris": 8248,
+  "paletteColor": [
+   16,
+   19,
+   25
+  ],
+  "paletteFile": "main-0069_palette.png",
+  "reachable": true
+ },
+ "70": {
+  "file": "swords/0070.json",
+  "prefabGo": "0070",
+  "grade": 10,
+  "family": 11,
+  "viName": "Kiếm như mảnh thủy tinh",
+  "koName": "유리 조각 같은 검",
+  "bboxMin": [
+   -0.241,
+   -0.115,
+   -0.0671
+  ],
+  "bboxMax": [
+   0.241,
+   1.286,
+   0.0671
+  ],
+  "verts": 3370,
+  "tris": 1778,
+  "paletteColor": [
+   19,
+   30,
+   76
+  ],
+  "paletteFile": "main-0070_palette.png",
+  "reachable": true
+ },
+ "71": {
+  "file": "swords/0071.json",
+  "prefabGo": "0071",
+  "grade": 12,
+  "family": 11,
+  "viName": "Kiếm mọc tinh thể",
+  "koName": "수정이 돋은 검",
+  "bboxMin": [
+   -0.2976,
+   -0.115,
+   -0.0726
+  ],
+  "bboxMax": [
+   0.2976,
+   1.326,
+   0.0726
+  ],
+  "verts": 3960,
+  "tris": 2098,
+  "paletteColor": [
+   13,
+   62,
+   76
+  ],
+  "paletteFile": "main-0071_palette.png",
+  "reachable": true
+ },
+ "72": {
+  "file": "swords/0072.json",
+  "prefabGo": "0072",
+  "grade": 14,
+  "family": 11,
+  "viName": "Kiếm lăng kính chẻ cầu vồng",
+  "koName": "무지개를 쪼개는 프리즘검",
+  "bboxMin": [
+   -0.3223,
+   -0.115,
+   -0.1206
+  ],
+  "bboxMax": [
+   0.3223,
+   1.366,
+   0.1206
+  ],
+  "verts": 4678,
+  "tris": 2630,
+  "paletteColor": [
+   15,
+   68,
+   32
+  ],
+  "paletteFile": "main-0072_palette.png",
+  "reachable": true
+ },
+ "73": {
+  "file": "swords/0073.json",
+  "prefabGo": "0073",
+  "grade": 16,
+  "family": 11,
+  "viName": "Đại kiếm pha lê nhốt ánh sáng",
+  "koName": "빛을 가두는 수정 대검",
+  "bboxMin": [
+   -0.3603,
+   -0.115,
+   -0.1313
+  ],
+  "bboxMax": [
+   0.3603,
+   1.406,
+   0.1313
+  ],
+  "verts": 5760,
+  "tris": 3612,
+  "paletteColor": [
+   76,
+   62,
+   13
+  ],
+  "paletteFile": "main-0073_palette.png",
+  "reachable": true
+ },
+ "74": {
+  "file": "swords/0074.json",
+  "prefabGo": "0074",
+  "grade": 18,
+  "family": 11,
+  "viName": "Kiếm ngàn mặt cắt",
+  "koName": "천 개의 면을 가진 검",
+  "bboxMin": [
+   -0.4351,
+   -0.115,
+   -0.1366
+  ],
+  "bboxMax": [
+   0.4351,
+   1.436,
+   0.1366
+  ],
+  "verts": 6768,
+  "tris": 4154,
+  "paletteColor": [
+   76,
+   38,
+   7
+  ],
+  "paletteFile": "main-0074_palette.png",
+  "reachable": true
+ },
+ "75": {
+  "file": "swords/0075.json",
+  "prefabGo": "0075",
+  "grade": 20,
+  "family": 11,
+  "viName": "Quang kiếm: Lăng kính vĩnh hằng",
+  "koName": "광휘검 : 영원의 프리즘",
+  "bboxMin": [
+   -0.4851,
+   -0.115,
+   -0.1419
+  ],
+  "bboxMax": [
+   0.4851,
+   1.466,
+   0.1419
+  ],
+  "verts": 7536,
+  "tris": 4568,
+  "paletteColor": [
+   76,
+   16,
+   32
+  ],
+  "paletteFile": "main-0075_palette.png",
+  "reachable": true
+ },
+ "76": {
+  "file": "swords/0076.json",
+  "prefabGo": "0076",
+  "grade": 10,
+  "family": 12,
+  "viName": "Kiếm rỉ bóng tối",
+  "koName": "그림자가 새는 검",
+  "bboxMin": [
+   -0.1741,
+   -0.165,
+   -0.0364
+  ],
+  "bboxMax": [
+   0.1741,
+   1.32,
+   0.042
+  ],
+  "verts": 4676,
+  "tris": 2930,
+  "paletteColor": [
+   8,
+   6,
+   11
+  ],
+  "paletteFile": "main-0076_palette.png",
+  "reachable": true
+ },
+ "77": {
+  "file": "swords/0077.json",
+  "prefabGo": "0077",
+  "grade": 12,
+  "family": 12,
+  "viName": "Kiếm ăn ánh sáng",
+  "koName": "빛을 먹는 검",
+  "bboxMin": [
+   -0.2383,
+   -0.165,
+   -0.0364
+  ],
+  "bboxMax": [
+   0.2486,
+   1.35,
+   0.055
+  ],
+  "verts": 5678,
+  "tris": 3682,
+  "paletteColor": [
+   8,
+   6,
+   11
+  ],
+  "paletteFile": "main-0077_palette.png",
+  "reachable": true
+ },
+ "78": {
+  "file": "swords/0078.json",
+  "prefabGo": "0078",
+  "grade": 14,
+  "family": 12,
+  "viName": "Kiếm rạch không gian",
+  "koName": "공간에 금을 긋는 검",
+  "bboxMin": [
+   -0.2663,
+   -0.165,
+   -0.0364
+  ],
+  "bboxMax": [
+   0.2517,
+   1.37,
+   0.055
+  ],
+  "verts": 6146,
+  "tris": 3938,
+  "paletteColor": [
+   8,
+   6,
+   11
+  ],
+  "paletteFile": "main-0078_palette.png",
+  "reachable": true
+ },
+ "79": {
+  "file": "swords/0079.json",
+  "prefabGo": "0079",
+  "grade": 16,
+  "family": 12,
+  "viName": "Kiếm ngó vào vực thẳm",
+  "koName": "심연을 들여다보는 검",
+  "bboxMin": [
+   -0.3305,
+   -0.165,
+   -0.0364
+  ],
+  "bboxMax": [
+   0.2873,
+   1.4,
+   0.0789
+  ],
+  "verts": 6454,
+  "tris": 4086,
+  "paletteColor": [
+   8,
+   6,
+   11
+  ],
+  "paletteFile": "main-0079_palette.png",
+  "reachable": true
+ },
+ "80": {
+  "file": "swords/0080.json",
+  "prefabGo": "0080",
+  "grade": 18,
+  "family": 12,
+  "viName": "Kiếm nuốt cả ánh sao",
+  "koName": "별빛마저 삼키는 검",
+  "bboxMin": [
+   -0.3581,
+   -0.165,
+   -0.056
+  ],
+  "bboxMax": [
+   0.3248,
+   1.43,
+   0.0818
+  ],
+  "verts": 9311,
+  "tris": 5778,
+  "paletteColor": [
+   8,
+   6,
+   11
+  ],
+  "paletteFile": "main-0080_palette.png",
+  "reachable": true
+ },
+ "81": {
+  "file": "swords/0081.json",
+  "prefabGo": "0081",
+  "grade": 20,
+  "family": 12,
+  "viName": "Hư không kiếm: Hư vô",
+  "koName": "허공검 : 무(無)",
+  "bboxMin": [
+   -0.3957,
+   -0.165,
+   -0.056
+  ],
+  "bboxMax": [
+   0.3554,
+   1.4616,
+   0.074
+  ],
+  "verts": 10751,
+  "tris": 6426,
+  "paletteColor": [
+   8,
+   6,
+   11
+  ],
+  "paletteFile": "main-0081_palette.png",
+  "reachable": true
+ },
+ "4000": {
+  "file": "swords/4000.json",
+  "prefabGo": "4000",
+  "grade": 25,
+  "family": 1,
+  "viName": "Kiếm thành trì: Kinh đô",
+  "koName": "성채검 : 왕도",
+  "bboxMin": [
+   -0.8335,
+   -0.26,
+   -0.1056
+  ],
+  "bboxMax": [
+   0.412,
+   1.8749,
+   0.0702
+  ],
+  "verts": 20688,
+  "tris": 10764,
+  "paletteColor": [
+   61,
+   61,
+   68
+  ],
+  "paletteFile": "main-4000_palette.png",
+  "reachable": true
+ },
+ "4001": {
+  "file": "swords/4001.json",
+  "prefabGo": "4001",
+  "grade": 30,
+  "family": 1,
+  "viName": "Kiếm thành trì: Sơn thành trên mây",
+  "koName": "성채검 : 천공의 산성",
+  "bboxMin": [
+   -0.8335,
+   -0.26,
+   -0.1056
+  ],
+  "bboxMax": [
+   0.48,
+   1.8749,
+   0.0855
+  ],
+  "verts": 21084,
+  "tris": 11316,
+  "paletteColor": [
+   61,
+   61,
+   68
+  ],
+  "paletteFile": "main-4001_palette.png",
+  "reachable": true
+ },
+ "4002": {
+  "file": "swords/4002.json",
+  "prefabGo": "4002",
+  "grade": 25,
+  "family": 2,
+  "viName": "Thánh kiếm: Vương miện mặt trời",
+  "koName": "성검 : 태양의 왕관",
+  "bboxMin": [
+   -0.5601,
+   -0.135,
+   -0.116
+  ],
+  "bboxMax": [
+   0.5601,
+   1.6076,
+   0.0706
+  ],
+  "verts": 14873,
+  "tris": 8782,
+  "paletteColor": [
+   178,
+   191,
+   219
+  ],
+  "paletteFile": "main-4002_palette.png",
+  "reachable": true
+ },
+ "4003": {
+  "file": "swords/4003.json",
+  "prefabGo": "4003",
+  "grade": 30,
+  "family": 2,
+  "viName": "Thánh kiếm: Thánh đường",
+  "koName": "성검 : 대성당",
+  "bboxMin": [
+   -0.6297,
+   -0.135,
+   -0.116
+  ],
+  "bboxMax": [
+   0.6297,
+   1.9498,
+   0.0706
+  ],
+  "verts": 17539,
+  "tris": 10498,
+  "paletteColor": [
+   178,
+   191,
+   219
+  ],
+  "paletteFile": "main-4003_palette.png",
+  "reachable": true
+ },
+ "4004": {
+  "file": "swords/4004.json",
+  "prefabGo": "4004",
+  "grade": 25,
+  "family": 3,
+  "viName": "Cưa diệt vong: Cỗ máy công thành",
+  "koName": "파멸톱 : 공성병기",
+  "bboxMin": [
+   -0.4116,
+   -0.1262,
+   -0.0448
+  ],
+  "bboxMax": [
+   0.4116,
+   1.7398,
+   0.0628
+  ],
+  "verts": 14080,
+  "tris": 8332,
+  "paletteColor": [
+   19,
+   19,
+   21
+  ],
+  "paletteFile": "main-4004_palette.png",
+  "reachable": true
+ },
+ "4005": {
+  "file": "swords/4005.json",
+  "prefabGo": "4005",
+  "grade": 30,
+  "family": 3,
+  "viName": "Cưa diệt vong: Động cơ tận thế",
+  "koName": "파멸톱 : 종말의 엔진",
+  "bboxMin": [
+   -0.4616,
+   -0.12,
+   -0.0448
+  ],
+  "bboxMax": [
+   0.4616,
+   1.8448,
+   0.0628
+  ],
+  "verts": 16394,
+  "tris": 10012,
+  "paletteColor": [
+   19,
+   19,
+   21
+  ],
+  "paletteFile": "main-4005_palette.png",
+  "reachable": true
+ },
+ "4006": {
+  "file": "swords/4006.json",
+  "prefabGo": "4006",
+  "grade": 25,
+  "family": 4,
+  "viName": "Long kiếm: Đôi cánh cổ long",
+  "koName": "용검 : 고룡의 날개",
+  "bboxMin": [
+   -0.6836,
+   -0.16,
+   -0.07
+  ],
+  "bboxMax": [
+   0.6836,
+   1.72,
+   0.072
+  ],
+  "verts": 9296,
+  "tris": 5082,
+  "paletteColor": [
+   21,
+   20,
+   21
+  ],
+  "paletteFile": "main-4006_palette.png",
+  "reachable": true
+ },
+ "4007": {
+  "file": "swords/4007.json",
+  "prefabGo": "4007",
+  "grade": 30,
+  "family": 4,
+  "viName": "Long kiếm: Long vương",
+  "koName": "용검 : 용왕",
+  "bboxMin": [
+   -0.6826,
+   -0.16,
+   -0.07
+  ],
+  "bboxMax": [
+   0.6826,
+   1.72,
+   0.072
+  ],
+  "verts": 10160,
+  "tris": 5718,
+  "paletteColor": [
+   21,
+   20,
+   21
+  ],
+  "paletteFile": "main-4007_palette.png",
+  "reachable": true
+ },
+ "4008": {
+  "file": "swords/4008.json",
+  "prefabGo": "4008",
+  "grade": 25,
+  "family": 5,
+  "viName": "Akasha: Vòng rune",
+  "koName": "아카샤 : 룬의 환",
+  "bboxMin": [
+   -0.522,
+   -0.15,
+   -0.2352
+  ],
+  "bboxMax": [
+   0.522,
+   1.57,
+   0.1828
+  ],
+  "verts": 11936,
+  "tris": 7928,
+  "paletteColor": [
+   140,
+   145,
+   163
+  ],
+  "paletteFile": "main-4008_palette.png",
+  "reachable": true
+ },
+ "4009": {
+  "file": "swords/4009.json",
+  "prefabGo": "4009",
+  "grade": 30,
+  "family": 5,
+  "viName": "Akasha: Mật mã vạn pháp",
+  "koName": "아카샤 : 비전 반응로",
+  "bboxMin": [
+   -0.38,
+   -0.33,
+   -0.2864
+  ],
+  "bboxMax": [
+   0.38,
+   2.686,
+   0.2864
+  ],
+  "verts": 16425,
+  "tris": 11202,
+  "paletteColor": [
+   12,
+   11,
+   16
+  ],
+  "paletteFile": "main-4009_palette.png",
+  "reachable": true
+ },
+ "4010": {
+  "file": "swords/4010.json",
+  "prefabGo": "4010",
+  "grade": 25,
+  "family": 6,
+  "viName": "Kiếm Luân: Ngai Vạn Kiếm",
+  "koName": "검륜(劍輪) : 천검의 옥좌",
+  "bboxMin": [
+   -0.48,
+   -0.152,
+   -0.3095
+  ],
+  "bboxMax": [
+   0.48,
+   1.66,
+   0.1495
+  ],
+  "verts": 16867,
+  "tris": 9824,
+  "paletteColor": [
+   107,
+   114,
+   127
+  ],
+  "paletteFile": "main-4010_palette.png",
+  "reachable": true
+ },
+ "4011": {
+  "file": "swords/4011.json",
+  "prefabGo": "4011",
+  "grade": 30,
+  "family": 6,
+  "viName": "Ngự Kiếm: Vạn Kiếm Nhất Thể",
+  "koName": "이기어검 : 만검귀종(萬劍歸宗)",
+  "bboxMin": [
+   -0.6718,
+   -0.1339,
+   -0.17
+  ],
+  "bboxMax": [
+   0.6718,
+   1.72,
+   0.17
+  ],
+  "verts": 9921,
+  "tris": 5492,
+  "paletteColor": [
+   107,
+   114,
+   127
+  ],
+  "paletteFile": "main-4011_palette.png",
+  "reachable": true
+ },
+ "4012": {
+  "file": "swords/4012.json",
+  "prefabGo": "4012",
+  "grade": 25,
+  "family": 7,
+  "viName": "Hoàng Đế Hơi Nước: Song Luân",
+  "koName": "증기황제 : 쌍륜기관차",
+  "bboxMin": [
+   -0.6395,
+   -0.1584,
+   -0.085
+  ],
+  "bboxMax": [
+   0.5245,
+   1.82,
+   0.1588
+  ],
+  "verts": 12869,
+  "tris": 8504,
+  "paletteColor": [
+   40,
+   43,
+   48
+  ],
+  "paletteFile": "main-4012_palette.png",
+  "reachable": true
+ },
+ "4013": {
+  "file": "swords/4013.json",
+  "prefabGo": "4013",
+  "grade": 30,
+  "family": 7,
+  "viName": "Người Khổng Lồ Thép: Xuyên Lục Địa",
+  "koName": "강철거신 : 대륙횡단기관",
+  "bboxMin": [
+   -0.7383,
+   -0.1584,
+   -0.085
+  ],
+  "bboxMax": [
+   0.5807,
+   2.02,
+   0.1588
+  ],
+  "verts": 16402,
+  "tris": 10898,
+  "paletteColor": [
+   40,
+   43,
+   48
+  ],
+  "paletteFile": "main-4013_palette.png",
+  "reachable": true
+ },
+ "4014": {
+  "file": "swords/4014.json",
+  "prefabGo": "4014",
+  "grade": 25,
+  "family": 8,
+  "viName": "Băng Miện Kiếm: Vương Miện Cực Quang",
+  "koName": "빙관검 : 극광의 왕관",
+  "bboxMin": [
+   -0.4553,
+   -0.205,
+   -0.0966
+  ],
+  "bboxMax": [
+   0.4553,
+   1.913,
+   0.0787
+  ],
+  "verts": 12714,
+  "tris": 7368,
+  "paletteColor": [
+   12,
+   16,
+   22
+  ],
+  "paletteFile": "main-4014_palette.png",
+  "reachable": true
+ },
+ "4015": {
+  "file": "swords/4015.json",
+  "prefabGo": "4015",
+  "grade": 30,
+  "family": 8,
+  "viName": "Ngai Băng Hà: Đêm Vĩnh Cửu",
+  "koName": "빙하왕좌 : 영원한 극야",
+  "bboxMin": [
+   -0.454,
+   -0.205,
+   -0.0966
+  ],
+  "bboxMax": [
+   0.454,
+   1.928,
+   0.0787
+  ],
+  "verts": 13762,
+  "tris": 7844,
+  "paletteColor": [
+   12,
+   16,
+   22
+  ],
+  "paletteFile": "main-4015_palette.png",
+  "reachable": true
+ },
+ "4016": {
+  "file": "swords/4016.json",
+  "prefabGo": "4016",
+  "grade": 25,
+  "family": 9,
+  "viName": "Cốt Kiếm Titan: Vương Miện Xương Sườn",
+  "koName": "거신골검 : 갈비뼈 왕관",
+  "bboxMin": [
+   -0.6132,
+   -0.2054,
+   -0.4156
+  ],
+  "bboxMax": [
+   0.5858,
+   2.221,
+   0.4264
+  ],
+  "verts": 15628,
+  "tris": 8184,
+  "paletteColor": [
+   85,
+   65,
+   44
+  ],
+  "paletteFile": "main-4016_palette.png",
+  "reachable": true
+ },
+ "4017": {
+  "file": "swords/4017.json",
+  "prefabGo": "4017",
+  "grade": 30,
+  "family": 9,
+  "viName": "Thú Vương Thái Cổ: Kẻ Nuốt Vạn Vật",
+  "koName": "태고수왕 : 만물의 포식자",
+  "bboxMin": [
+   -0.6567,
+   -0.261,
+   -0.4156
+  ],
+  "bboxMax": [
+   0.5251,
+   2.301,
+   0.4264
+  ],
+  "verts": 17138,
+  "tris": 8980,
+  "paletteColor": [
+   85,
+   65,
+   44
+  ],
+  "paletteFile": "main-4017_palette.png",
+  "reachable": true
+ },
+ "4018": {
+  "file": "swords/4018.json",
+  "prefabGo": "4018",
+  "grade": 25,
+  "family": 10,
+  "viName": "Lôi Vân Kiếm: Vòng Sấm Sét",
+  "koName": "뇌운검 : 천둥의 고리",
+  "bboxMin": [
+   -0.373,
+   -0.144,
+   -0.1775
+  ],
+  "bboxMax": [
+   0.373,
+   1.56,
+   0.1775
+  ],
+  "verts": 11264,
+  "tris": 7682,
+  "paletteColor": [
+   16,
+   19,
+   25
+  ],
+  "paletteFile": "main-4018_palette.png",
+  "reachable": true
+ },
+ "4019": {
+  "file": "swords/4019.json",
+  "prefabGo": "4019",
+  "grade": 30,
+  "family": 10,
+  "viName": "Lôi Thần: Trống Trời Phán Xét",
+  "koName": "뇌신검 : 하늘북의 심판",
+  "bboxMin": [
+   -0.3843,
+   -0.144,
+   -0.1775
+  ],
+  "bboxMax": [
+   0.3843,
+   1.62,
+   0.1775
+  ],
+  "verts": 14392,
+  "tris": 9538,
+  "paletteColor": [
+   16,
+   19,
+   25
+  ],
+  "paletteFile": "main-4019_palette.png",
+  "reachable": true
+ },
+ "4020": {
+  "file": "swords/4020.json",
+  "prefabGo": "4020",
+  "grade": 25,
+  "family": 11,
+  "viName": "Quang Huy Kiếm: Thánh đường lăng kính",
+  "koName": "광휘검 : 프리즘 대성당",
+  "bboxMin": [
+   -0.6298,
+   -0.1235,
+   -0.1145
+  ],
+  "bboxMax": [
+   0.6298,
+   1.726,
+   0.1145
+  ],
+  "verts": 10158,
+  "tris": 5950,
+  "paletteColor": [
+   76,
+   16,
+   32
+  ],
+  "paletteFile": "main-4020_palette.png",
+  "reachable": true
+ },
+ "4021": {
+  "file": "swords/4021.json",
+  "prefabGo": "4021",
+  "grade": 30,
+  "family": 11,
+  "viName": "Quang Huy Kiếm: Vương miện cầu vồng",
+  "koName": "광휘검 : 무지개 왕관",
+  "bboxMin": [
+   -0.6692,
+   -0.115,
+   -0.1224
+  ],
+  "bboxMax": [
+   0.6692,
+   1.726,
+   0.1224
+  ],
+  "verts": 11576,
+  "tris": 7194,
+  "paletteColor": [
+   76,
+   16,
+   32
+  ],
+  "paletteFile": "main-4021_palette.png",
+  "reachable": true
+ },
+ "4022": {
+  "file": "swords/4022.json",
+  "prefabGo": "4022",
+  "grade": 25,
+  "family": 12,
+  "viName": "Hư Không Kiếm: Chân trời sự kiện",
+  "koName": "허공검 : 사건의 지평선",
+  "bboxMin": [
+   -0.3927,
+   -0.165,
+   -0.766
+  ],
+  "bboxMax": [
+   0.4147,
+   1.6187,
+   0.086
+  ],
+  "verts": 12936,
+  "tris": 8822,
+  "paletteColor": [
+   8,
+   6,
+   11
+  ],
+  "paletteFile": "main-4022_palette.png",
+  "reachable": true
+ },
+ "4023": {
+  "file": "swords/4023.json",
+  "prefabGo": "4023",
+  "grade": 30,
+  "family": 12,
+  "viName": "Hư Không Kiếm: Cổng không gian",
+  "koName": "허공검 : 차원의 문",
+  "bboxMin": [
+   -0.4454,
+   -0.165,
+   -0.102
+  ],
+  "bboxMax": [
+   0.4454,
+   1.6248,
+   0.0818
+  ],
+  "verts": 13294,
+  "tris": 7326,
+  "paletteColor": [
+   8,
+   6,
+   11
+  ],
+  "paletteFile": "main-4023_palette.png",
+  "reachable": true
+ },
+ "4024": {
+  "file": "swords/4024.json",
+  "prefabGo": "4024",
+  "grade": 999,
+  "family": 1,
+  "viName": "Kiếm thành trì: Bạch thành bảy tầng",
+  "koName": "",
+  "bboxMin": [
+   -0.7594,
+   -0.666,
+   -0.1399
+  ],
+  "bboxMax": [
+   0.7594,
+   2.82,
+   0.2694
+  ],
+  "verts": 24145,
+  "tris": 14988,
+  "paletteColor": [
+   140,
+   117,
+   86
+  ],
+  "paletteFile": "main-4024_palette.png",
+  "reachable": true
+ },
+ "4025": {
+  "file": "swords/4025.json",
+  "prefabGo": "4025",
+  "grade": 999,
+  "family": 2,
+  "viName": "Thánh kiếm: Chuông trời",
+  "koName": "",
+  "bboxMin": [
+   -0.9822,
+   -0.782,
+   -0.192
+  ],
+  "bboxMax": [
+   0.7067,
+   2.64,
+   0.192
+  ],
+  "verts": 23638,
+  "tris": 15168,
+  "paletteColor": [
+   209,
+   214,
+   224
+  ],
+  "paletteFile": "main-4025_palette.png",
+  "reachable": true
+ },
+ "4026": {
+  "file": "swords/4026.json",
+  "prefabGo": "4026",
+  "grade": 999,
+  "family": 3,
+  "viName": "Cưa diệt vong: Máy cưa V8",
+  "koName": "",
+  "bboxMin": [
+   -0.76,
+   -1.012,
+   -0.2565
+  ],
+  "bboxMax": [
+   0.456,
+   2.3285,
+   0.3496
+  ],
+  "verts": 15450,
+  "tris": 8668,
+  "paletteColor": [
+   81,
+   84,
+   91
+  ],
+  "paletteFile": "main-4026_palette.png",
+  "reachable": true
+ },
+ "4027": {
+  "file": "swords/4027.json",
+  "prefabGo": "4027",
+  "grade": 999,
+  "family": 4,
+  "viName": "Long kiếm: Thanh Long Yển Nguyệt",
+  "koName": "",
+  "bboxMin": [
+   -0.8346,
+   -0.7718,
+   -0.096
+  ],
+  "bboxMax": [
+   0.835,
+   2.45,
+   0.1086
+  ],
+  "verts": 16677,
+  "tris": 9362,
+  "paletteColor": [
+   28,
+   30,
+   38
+  ],
+  "paletteFile": "main-4027_palette.png",
+  "reachable": true
+ },
+ "4028": {
+  "file": "swords/4028.json",
+  "prefabGo": "4028",
+  "grade": 999,
+  "family": 5,
+  "viName": "Akasha: Lò phản ứng bí thuật",
+  "koName": "",
+  "bboxMin": [
+   -0.5577,
+   -0.189,
+   -0.2352
+  ],
+  "bboxMax": [
+   0.5577,
+   1.57,
+   0.1828
+  ],
+  "verts": 14180,
+  "tris": 10204,
+  "paletteColor": [
+   140,
+   145,
+   163
+  ],
+  "paletteFile": "main-4028_palette.png",
+  "reachable": true
+ },
+ "4029": {
+  "file": "swords/4029.json",
+  "prefabGo": "4029",
+  "grade": 999,
+  "family": 6,
+  "viName": "Ngự Kiếm: Vạn Kiếm Quy Tông",
+  "koName": "",
+  "bboxMin": [
+   -0.7319,
+   -1.11,
+   -0.23
+  ],
+  "bboxMax": [
+   0.7319,
+   2.01,
+   0.081
+  ],
+  "verts": 24267,
+  "tris": 15118,
+  "paletteColor": [
+   5,
+   15,
+   66
+  ],
+  "paletteFile": "main-4029_palette.png",
+  "reachable": true
+ },
+ "4030": {
+  "file": "swords/4030.json",
+  "prefabGo": "4030",
+  "grade": 999,
+  "family": 7,
+  "viName": "Người Khổng Lồ Thép: Tàu Tốc Hành Hoàng Gia",
+  "koName": "",
+  "bboxMin": [
+   -0.41,
+   -0.45,
+   -0.25
+  ],
+  "bboxMax": [
+   0.41,
+   3.02,
+   0.305
+  ],
+  "verts": 15375,
+  "tris": 10432,
+  "paletteColor": [
+   7,
+   22,
+   107
+  ],
+  "paletteFile": "main-4030_palette.png",
+  "reachable": true
+ },
+ "4031": {
+  "file": "swords/4031.json",
+  "prefabGo": "4031",
+  "grade": 999,
+  "family": 8,
+  "viName": "Ngai Băng Hà: Đại Tuyết Hoa",
+  "koName": "",
+  "bboxMin": [
+   -0.86,
+   -0.215,
+   -0.0831
+  ],
+  "bboxMax": [
+   0.86,
+   3.12,
+   0.1686
+  ],
+  "verts": 15056,
+  "tris": 7734,
+  "paletteColor": [
+   224,
+   229,
+   237
+  ],
+  "paletteFile": "main-4031_palette.png",
+  "reachable": true
+ },
+ "4032": {
+  "file": "swords/4032.json",
+  "prefabGo": "4032",
+  "grade": 999,
+  "family": 9,
+  "viName": "Thú Vương Thái Cổ: Sọ Thú Vương",
+  "koName": "",
+  "bboxMin": [
+   -0.784,
+   -0.49,
+   -0.4191
+  ],
+  "bboxMax": [
+   0.3468,
+   2.82,
+   0.6247
+  ],
+  "verts": 15384,
+  "tris": 8096,
+  "paletteColor": [
+   147,
+   122,
+   88
+  ],
+  "paletteFile": "main-4032_palette.png",
+  "reachable": true
+ },
+ "4033": {
+  "file": "swords/4033.json",
+  "prefabGo": "4033",
+  "grade": 999,
+  "family": 10,
+  "viName": "Lôi Thần: Đại Lôi Cổ",
+  "koName": "",
+  "bboxMin": [
+   -0.688,
+   -0.486,
+   -0.2
+  ],
+  "bboxMax": [
+   0.688,
+   3.52,
+   0.322
+  ],
+  "verts": 11916,
+  "tris": 6836,
+  "paletteColor": [
+   219,
+   201,
+   158
+  ],
+  "paletteFile": "main-4033_palette.png",
+  "reachable": true
+ },
+ "4034": {
+  "file": "swords/4034.json",
+  "prefabGo": "4034",
+  "grade": 999,
+  "family": 11,
+  "viName": "Quang Huy Kiếm: Kim cương đế vương",
+  "koName": "",
+  "bboxMin": [
+   -0.495,
+   -0.175,
+   -0.4289
+  ],
+  "bboxMax": [
+   0.495,
+   2.7945,
+   0.4289
+  ],
+  "verts": 9880,
+  "tris": 6644,
+  "paletteColor": [
+   94,
+   110,
+   151
+  ],
+  "paletteFile": "main-4034_palette.png",
+  "reachable": true
+ },
+ "4035": {
+  "file": "swords/4035.json",
+  "prefabGo": "4035",
+  "grade": 999,
+  "family": 12,
+  "viName": "Hư Không Kiếm: Khối đá hư không",
+  "koName": "",
+  "bboxMin": [
+   -0.4967,
+   -0.8494,
+   -0.5718
+  ],
+  "bboxMax": [
+   0.4967,
+   3.2857,
+   0.5718
+  ],
+  "verts": 6812,
+  "tris": 3804,
+  "paletteColor": [
+   10,
+   3,
+   19
+  ],
+  "paletteFile": "main-4035_palette.png",
+  "reachable": true
+ },
+ "8": {
+  "file": null,
+  "prefabGo": "0008",
+  "grade": 10,
+  "family": 1,
+  "viName": "Đại kiếm này có gì đó sai sai",
+  "koName": "뭔가 이상한 철판 대검",
+  "reachable": false,
+  "note": "TODO-RE: in catalogue with a resolvable prefab, but no selection path outputs this id (ResolveId/ResolveMain/IdAt never return it — BEHAVIOR.md §8.4 M7). Frontend falls back to the base Blade if it is ever requested."
+ },
+ "13": {
+  "file": null,
+  "prefabGo": "0013",
+  "grade": 10,
+  "family": 2,
+  "viName": "Kiếm bạc buộc ánh sáng",
+  "koName": "빛이 깃든 은빛 검",
+  "reachable": false,
+  "note": "TODO-RE: in catalogue with a resolvable prefab, but no selection path outputs this id (ResolveId/ResolveMain/IdAt never return it — BEHAVIOR.md §8.4 M7). Frontend falls back to the base Blade if it is ever requested."
+ },
+ "18": {
+  "file": null,
+  "prefabGo": "0018",
+  "grade": 10,
+  "family": 3,
+  "viName": "Đây là cưa hay là kiếm vậy?",
+  "koName": "이게 톱인지 검인지",
+  "reachable": false,
+  "note": "TODO-RE: in catalogue with a resolvable prefab, but no selection path outputs this id (ResolveId/ResolveMain/IdAt never return it — BEHAVIOR.md §8.4 M7). Frontend falls back to the base Blade if it is ever requested."
+ },
+ "23": {
+  "file": null,
+  "prefabGo": "0023",
+  "grade": 10,
+  "family": 4,
+  "viName": "Nanh rồng non",
+  "koName": "어린 용의 송곳니",
+  "reachable": false,
+  "note": "TODO-RE: in catalogue with a resolvable prefab, but no selection path outputs this id (ResolveId/ResolveMain/IdAt never return it — BEHAVIOR.md §8.4 M7). Frontend falls back to the base Blade if it is ever requested."
+ },
+ "28": {
+  "file": null,
+  "prefabGo": "0028",
+  "grade": 10,
+  "family": 5,
+  "viName": "Kiếm khắc rune",
+  "koName": "주문 새긴 룬검",
+  "reachable": false,
+  "note": "TODO-RE: in catalogue with a resolvable prefab, but no selection path outputs this id (ResolveId/ResolveMain/IdAt never return it — BEHAVIOR.md §8.4 M7). Frontend falls back to the base Blade if it is ever requested."
+ },
+ "33": {
+  "file": null,
+  "prefabGo": "0033",
+  "grade": 10,
+  "family": 6,
+  "viName": "Đã gãy nhưng vẫn còn bên nhau",
+  "koName": "부러져도 붙어 있는 검",
+  "reachable": false,
+  "note": "TODO-RE: in catalogue with a resolvable prefab, but no selection path outputs this id (ResolveId/ResolveMain/IdAt never return it — BEHAVIOR.md §8.4 M7). Frontend falls back to the base Blade if it is ever requested."
+ }
+}

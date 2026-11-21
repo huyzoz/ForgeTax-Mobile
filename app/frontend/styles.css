@@ -1,7 +1,14 @@
-/* ForgeTax Mobile remake — P0 3D forge scene (Three.js + original
-   mobile 3.17.0 textures). Flat, dark forge palette (charcoal + ember +
-   brass). No plastic look. Geometry is simple primitives wearing the
-   original's textures — never the original's meshes. */
+/* ForgeTax Mobile remake — P0 3D forge scene (Three.js + the REAL
+   3.17.0 scene layout and original textures). Flat, dark forge palette
+   (charcoal + ember + brass). No plastic look.
+   The room IS the UI (LAYOUT.md §9): all game state is 3D text on the
+   in-room boards; there are no DOM text frames, buttons, or topbar.
+   Only the ESC settings panel, transient toasts, the FPS counter (when
+   the setting is on) and the end-of-run overlay stay DOM.
+   R-01 — TODO-RE (STILL MISSING, remake proposal — NOT in the v2
+   data): this stylesheet is a remake (no CSS was extracted from the
+   APK). The palette, layout and component styles are the previous
+   SENSOR's, KEPT + marked; do not present them as source data. */
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -35,112 +42,19 @@ html, body {
   background: #000; opacity: 0; pointer-events: none; z-index: 40;
 }
 
-/* -- top bar ----------------------------------------------------------- */
-#topbar {
-  height: 64px; flex: 0 0 64px;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 0 16px;
-  background: #241c16;
-  border-bottom: 2px solid #3a2c1e;
-}
-.top-left { display: flex; flex-direction: column; gap: 2px; min-width: 420px; }
-#contract-line { font-size: 16px; font-weight: 700; color: #f0e6d6; }
-#quota-line { font-size: 12px; color: #c9963c; letter-spacing: 1px; }
-.quota-bar {
-  height: 8px; background: #171310; border: 1px solid #3a2c1e;
-  border-radius: 4px; overflow: hidden; width: 420px;
-}
-#quota-fill {
-  height: 100%; width: 0%;
-  background: linear-gradient(90deg, #c9963c, #e8622a);
-  transition: width 0.3s;
-}
-.top-right { display: flex; align-items: center; gap: 16px; }
-#tribute-line { font-size: 13px; color: #d8c9a8; }
-#anger-pips { font-size: 15px; letter-spacing: 4px; color: #5a4632; }
-#anger-pips .anger-pip.on { color: #e0322a; }
-#btn-settings {
-  background: #3a2c1e; color: #f0e6d6; border: 1px solid #c9963c;
-  border-radius: 6px; padding: 8px 14px; cursor: pointer; font-size: 14px;
-}
-#btn-settings:hover { background: #4a3826; }
-
-/* -- forge scene (3D) ---------------------------------------------------- */
-/* The forge room is a Three.js WebGL canvas (#gl) wearing the ORIGINAL
-   mobile 3.17.0 textures (see textures/MANIFEST.md). Geometry is simple
-   primitives — never the original's meshes. The HUD below stays DOM. */
+/* -- forge scene (3D, full screen) --------------------------------------- */
+/* The forge room is a Three.js WebGL canvas (#gl) built from the REAL
+   3.17.0 scene layout (scene-data.json + meshes.json) wearing the
+   ORIGINAL mobile textures (see textures/MANIFEST.md). */
 #scene {
   flex: 1; position: relative; overflow: hidden; cursor: pointer;
   background: #171310;
 }
 #gl { position: absolute; inset: 0; }
 #gl canvas { display: block; width: 100%; height: 100%; }
-.grade-badge {
-  position: absolute; z-index: 5; pointer-events: none;
-  min-width: 40px; height: 40px; line-height: 40px; text-align: center;
-  background: #c9963c; color: #171310; font-weight: 800; font-size: 17px;
-  border-radius: 50%; border: 2px solid #f0e6d6;
-  transform: translate(-50%, -50%);
-}
-
-#outcome-pop {
-  position: absolute; left: 50%; top: 24%; transform: translate(-50%, -50%) scale(0.8);
-  font-size: 34px; font-weight: 900; letter-spacing: 2px; opacity: 0;
-  pointer-events: none; text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-}
-#outcome-pop.show { opacity: 1; transform: translate(-50%, -50%) scale(1); transition: all 0.12s; }
-#outcome-pop.success { color: #7ac74f; }
-#outcome-pop.great { color: #ffcf4d; }
-#outcome-pop.hold { color: #c8ccd4; }
-#outcome-pop.damage { color: #e8a23c; }
-#outcome-pop.break { color: #e0322a; }
-
-/* -- HUD ---------------------------------------------------------------- */
-#hud {
-  flex: 0 0 172px; display: flex; gap: 16px;
-  padding: 12px 16px; background: #241c16; border-top: 2px solid #3a2c1e;
-}
-.hud-left { flex: 1.2; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-#sword-info { font-size: 13px; color: #d8c9a8; display: flex; gap: 18px; }
-#sword-value { font-weight: 700; color: #f0e6d6; }
-#chances { display: flex; flex-direction: column; gap: 3px; }
-.chance-row { display: flex; align-items: center; gap: 8px; font-size: 11px; }
-.chance-label { width: 110px; text-align: right; color: #c8b898; }
-.chance-bar { flex: 1; height: 10px; background: #171310; border: 1px solid #3a2c1e; border-radius: 5px; overflow: hidden; }
-.chance-fill { height: 100%; background: #8a94a6; }
-.chance-row.break .chance-fill { background: #e0322a; }
-.chance-row.damage .chance-fill { background: #e8a23c; }
-.chance-row.hold .chance-fill { background: #8a94a6; }
-.chance-row.success .chance-fill { background: #7ac74f; }
-.chance-row.great .chance-fill { background: #ffcf4d; }
-.chance-val { width: 44px; color: #d8c9a8; }
-
-.hud-mid { flex: 1; display: flex; flex-direction: column; gap: 8px; }
-#fever-box { display: flex; flex-direction: column; gap: 4px; }
-#fever-label { font-size: 13px; font-weight: 700; color: #ff9a4d; }
-.fever-bar { height: 12px; background: #171310; border: 1px solid #3a2c1e; border-radius: 6px; overflow: hidden; }
-#fever-fill { height: 100%; width: 0%; background: #c9963c; transition: width 0.2s; }
-#fever-fill.active { background: linear-gradient(90deg, #ff7a1a, #ffcf4d); animation: fever-pulse 0.6s infinite alternate; }
-@keyframes fever-pulse { from { filter: brightness(1); } to { filter: brightness(1.35); } }
-#relic-chips { display: flex; flex-wrap: wrap; gap: 5px; }
-.relic-chip {
-  background: #3a2c1e; border: 1px solid #c9963c; border-radius: 10px;
-  padding: 2px 8px; font-size: 11px; color: #f0e6d6;
-}
-
-.hud-right { flex: 0 0 240px; display: flex; flex-direction: column; gap: 8px; }
-.hud-right button {
-  flex: 1; font-size: 15px; font-weight: 700; cursor: pointer;
-  border-radius: 8px; border: 1px solid #c9963c;
-  background: #3a2c1e; color: #f0e6d6;
-}
-.hud-right button:hover:not(:disabled) { background: #4a3826; }
-.hud-right button:disabled { opacity: 0.4; cursor: default; }
-#btn-strike { background: #8a4a1a; border-color: #e8622a; font-size: 16px; }
-#btn-strike:hover:not(:disabled) { background: #a55a20; }
 
 #toast {
-  position: absolute; left: 50%; bottom: 196px; transform: translateX(-50%);
+  position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
   background: rgba(23, 19, 16, 0.92); border: 1px solid #c9963c; border-radius: 8px;
   padding: 8px 16px; font-size: 14px; opacity: 0; pointer-events: none;
   transition: opacity 0.2s; z-index: 30; white-space: nowrap;
@@ -148,7 +62,7 @@ html, body {
 #toast.show { opacity: 1; }
 
 #fps-counter {
-  position: absolute; right: 12px; top: 74px; z-index: 25;
+  position: absolute; right: 12px; top: 12px; z-index: 25;
   background: rgba(23, 19, 16, 0.85); border: 1px solid #3a2c1e;
   border-radius: 4px; padding: 2px 8px; font-size: 12px; color: #7ac74f;
   display: none;

@@ -1,9 +1,13 @@
-// ForgeTax Mobile remake — P0 frontend (3D Three.js scene + DOM HUD).
+// ForgeTax Mobile remake — P0 frontend (real 3D room + in-scene UI).
 //
 // The game logic lives in the Rust core (forgetax-core); this file only
 // renders state and forwards input. The forge room is rendered by
-// scene3d.js (Three.js, original mobile 3.17.0 textures); the topbar,
-// chances, Fever meter, buttons, settings and overlays stay DOM.
+// scene3d.js (Three.js, the REAL 3.17.0 scene layout + original textures);
+// ALL game state is shown as 3D text on the in-room boards (LAYOUT.md
+// §5, §9) — there are no DOM text frames, no action buttons, no topbar.
+// Interactions are in-scene taps: anvil/sword = strike, service window /
+// counter bell = tribute, ledger/calendar = next day (ForgeInteractable
+// targets, LAYOUT.md §4). ESC opens settings (the only DOM panel kept).
 // Backend bridge:
 //   - In the Tauri app: window.__TAURI__.core.invoke(cmd, args).
 //   - In dev/test mode (plain http server): POST /api/<cmd> with JSON.
@@ -30,6 +34,10 @@ const Backend = {
 
 // Starter relic display names — mirrors relics.rs display_name()
 // (fresh Vietnamese wording written for this remake).
+// REMADE — approved by OWNER 2026-11-21 (R-04): no Vietnamese relic names
+// exist in the game data (vi.txt has item.<id>.name in English/Korean
+// source only for the P0 starters' descriptions, not VI display names) —
+// these VI names are our translation, shown as such.
 const RELIC_NAMES = {
   nail: "Đinh Cong",
   file: "Đá Mài Cũ",
@@ -49,13 +57,52 @@ const OUTCOME_KEYS = {
   great: "ui.outcome_great",
 };
 
+// F-01 — REAL outcome colours: the 'Outcome light 0..4' material
+// _BaseColor values (LAYOUT.md §5a, linear) converted to sRGB with the
+// exact IEC formula (v<=0.0031308 ? 12.92v : 1.055*v^(1/2.4)-0.055):
+//   BREAK [0.57,0.174,0.144] -> #C7746A, damage [0.558,0.342,0.144] ->
+//   #C59E6A, Hold [0.42,0.438,0.432] -> #ADB1B0, Success [0.222,0.516,
+//   0.426] -> #82BEAF, Great [0.6,0.474,0.192] -> #CBB779.
+// (The previous self-set hex #e0322a/#e8a23c/#c8ccd4/#7ac74f/#ffcf4d was
+// wrong — AEGIS F-01.)
+// REMADE — approved by OWNER 2026-11-21 (R-05): the VI outcome labels
+// below (GÃY/HỎNG/GIỮ/THÀNH CÔNG/ĐẠI THÀNH CÔNG) are our translation —
+// the original's board labels are the Korean TextMesh strings
+// (파괴/손상/유지/성공/대성공, ui_layout.json); vi.txt's ticket names
+// (Phiếu Đại thành công / Thành công / Giữ nguyên / Hư hại) are the
+// closest VI source but are ticket names, not outcome labels.
+const OUTCOME_COLORS = {
+  break: "#C7746A",
+  damage: "#C59E6A",
+  hold: "#ADB1B0",
+  success: "#82BEAF",
+  great: "#CBB779",
+};
+
+const OUTCOME_ORDER = ["break", "damage", "hold", "success", "great"];
+
+// Sword names — the original's own Vietnamese names (unity/textassets/
+// vi.txt, 45 P0 ids 1–45), loaded at boot. Falls back to English
+// (ForgeTax.txt) then to "Kiếm #id" if a name is missing.
+let SWORD_NAMES = {};
+
 let state = null;
 let settings = null;
 let striking = false;
+let strikeReadyAt = 0; // R-06: nextStrikeTime = now + 0.64/speed (speed 1.0 in P0).
 let feverTickAcc = 0;
 let lastFeverActive = false;
 let drag = null;
 let viewOffset = { x: 0, y: 0 };
+let lastOutcome = null;
+let lastOutcomeLabel = null;
+let consecCount = 0;
+// R-17: appearance uses the HIGHEST grade reached (ForgeSwordAppearance
+// SyncAppearance: grade = max(highestVisualGrade, grade) — the form does
+// NOT step back down after a Damage). Tracked per sword, keyed by
+// (round, sword_index); reset when the sword changes.
+let swordKey = null;
+let swordHighestGrade = 0;
 
 // ---------------------------------------------------------------------------
 // DOM helpers
@@ -64,13 +111,9 @@ const $ = (id) => document.getElementById(id);
 const els = {};
 
 function collectEls() {
-  ["loading", "error", "app", "contract-line", "quota-line", "quota-fill",
-   "tribute-line", "anger-pips", "sword-grade", "sword-value", "sword-peak",
-   "scene", "gl", "chances", "fever-fill", "fever-label",
-   "relic-chips", "btn-strike", "btn-tribute", "btn-endday", "btn-settings",
-   "outcome-pop", "toast", "fps-counter", "brightness-overlay",
-   "settings-panel", "overlay", "overlay-title", "overlay-sub",
-   "overlay-btn-endless", "overlay-btn-new"].forEach((id) => { els[id] = $(id); });
+  ["loading", "error", "app", "scene", "gl", "toast", "fps-counter",
+   "brightness-overlay", "settings-panel", "overlay", "overlay-title",
+   "overlay-sub", "overlay-btn-endless", "overlay-btn-new"].forEach((id) => { els[id] = $(id); });
 }
 
 function showError(msg) {
@@ -80,71 +123,74 @@ function showError(msg) {
   els.error.textContent = t("ui.error") + " (" + msg + ")";
 }
 
+function fmtGold(n) {
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}
+
 // ---------------------------------------------------------------------------
-// Rendering
+// Rendering — state -> the 3D room (boards, lights, sword, fever, anger)
 // ---------------------------------------------------------------------------
+function buildView() {
+  const s = state;
+  // R-17: track the highest grade per sword (see swordHighestGrade above).
+  // The key is (round, sword_index) — the core's sword id cycles 1-45 so
+  // the id alone does not identify a sword.
+  if (s.sword) {
+    const key = s.round + "/" + (s.sword_index ?? 0);
+    if (key !== swordKey) {
+      swordKey = key;
+      swordHighestGrade = s.sword.grade;
+    } else if (s.sword.grade > swordHighestGrade) {
+      swordHighestGrade = s.sword.grade;
+    }
+  }
+  return {
+    sword: s.sword ? { id: s.sword.id, grade: s.sword.grade, value: s.sword.value } : null,
+    // Fallback kind name (SWORD_NAMES, vi.txt sword.<id>.name 1-45). The
+    // board's identity label uses the APPEARANCE name (swords-manifest
+    // viName for the resolved appearance id) — scene3d.js resolves it.
+    swordName: s.sword ? (SWORD_NAMES[s.sword.id] || ("Kiếm #" + s.sword.id)) : null,
+    swordIndex: s.sword_index ?? 0,
+    swordHighestGrade,
+    roundTribute: s.round_tribute,
+    quota: s.quota,
+    quotaMet: s.round_tribute >= s.quota,
+    round: s.round,
+    endless: s.endless,
+    anger: s.anger,
+    channels: OUTCOME_ORDER.map((key, i) => ({
+      key,
+      label: t(OUTCOME_KEYS[key]),
+      pct: s.chances[i] / 10,
+    })),
+    lastOutcome,
+    lastOutcomeLabel,
+    lastOutcomeColor: lastOutcome ? OUTCOME_COLORS[lastOutcome] : "#f0e6d6",
+    consecutive: consecCount,
+    fever: {
+      active: s.fever.active,
+      timeLeft: s.fever.time_left,
+      charge: s.fever.charge,
+      needed: s.fever.needed,
+      // R-07/R-15: bonus (effects+0x128) + max (effects+0xd4) from
+      // StartFever — the frontend computes FeverAge / FeverEnvelope /
+      // cameraPower from these (behavior.json fever).
+      bonus: s.fever.bonus ?? 4,
+      max: s.fever.max ?? 8,
+    },
+    relics: s.relics.map((id) => RELIC_NAMES[id] || id),
+  };
+}
+
 function render() {
   if (!state) return;
   const s = state;
-  // Contract line: "Hợp đồng  Ngày {round} / 24" (or endless day).
-  els["contract-line"].textContent = s.endless
-    ? t("contract.endless", [s.round])
-    : t("contract.remaining", [s.round, 24]);
-  // Quota: "CỐNG PHẨM YÊU CẦU  {quota} G" + progress bar.
-  els["quota-line"].textContent = t("ui.quota_caption") + "  " + fmtGold(s.quota) + " G";
-  const pct = Math.min(100, (s.round_tribute / s.quota) * 100);
-  els["quota-fill"].style.width = pct + "%";
-  // Tribute offered: "ĐÃ DÂNG: {count} kiếm / {value} G".
-  els["tribute-line"].textContent = t("template.tribute_offer", {
-    count: s.round_tributed,
-    value: fmtGold(s.round_tribute),
-  });
-  // Anger pips (3).
-  els["anger-pips"].innerHTML = "";
-  for (let i = 0; i < 3; i++) {
-    const pip = document.createElement("span");
-    pip.className = "anger-pip" + (i < s.anger ? " on" : "");
-    pip.textContent = "◆";
-    els["anger-pips"].appendChild(pip);
-  }
-  els["anger-pips"].title = t("ending.anger");
-  // Sword: grade badge stays DOM (positioned over the 3D canvas by
-  // scene3d.js); the blade mesh itself is updated in the 3D scene.
-  if (s.sword) {
-    els["sword-grade"].textContent = "+" + s.sword.grade;
-    els["sword-value"].textContent = t("inspect.value", [fmtGold(s.sword.value) + " G"]);
-    els["sword-peak"].textContent = t("menu2.bestGrade") + ": " + fmtGold(s.sword.peak_value) + " G";
-    if (window.ForgeScene) window.ForgeScene.setSword(s.sword);
-  } else {
-    els["sword-grade"].style.display = "none";
-    if (window.ForgeScene) window.ForgeScene.setSword(null);
-  }
-  // Chances bars (per-mille).
-  renderChances(s.chances);
-  // Fever meter.
-  const f = s.fever;
-  els["fever-fill"].style.width = (f.active ? 100 : (f.charge / f.needed) * 100) + "%";
-  els["fever-fill"].classList.toggle("active", f.active);
-  els["fever-label"].textContent = f.active
-    ? t("ui.fever") + " — " + f.time_left.toFixed(1) + "s"
-    : f.charge >= f.needed
-      ? t("fever.ready")
-      : t("ui.fever") + " " + f.charge + "/" + f.needed;
-  // Relic chips.
-  els["relic-chips"].innerHTML = "";
-  s.relics.forEach((id) => {
-    const chip = document.createElement("span");
-    chip.className = "relic-chip";
-    chip.textContent = RELIC_NAMES[id] || id;
-    chip.title = id;
-    els["relic-chips"].appendChild(chip);
-  });
-  // Buttons.
-  const playing = s.state === "playing";
-  els["btn-strike"].disabled = !playing || !s.sword || s.sword.broken;
-  els["btn-tribute"].disabled = !playing || !s.sword || s.sword.broken;
-  els["btn-endday"].disabled = !playing;
-  // End overlays.
+  if (window.ForgeScene) window.ForgeScene.update(buildView());
+  // R-21 — REMADE (approved by OWNER 2026-11-21): the end-of-run overlay
+  // (victory / defeated, with the Endless continue button) is a DOM
+  // overlay — the original has no end-of-run overlay in the extraction
+  // (the run ends on the Ledger / in the dragon presentation, not in a
+  // modal). End overlays.
   if (s.state === "victory") {
     showOverlay(t("ui.victory"), t("contract.lastday"), true);
   } else if (s.state === "defeated") {
@@ -152,36 +198,9 @@ function render() {
   } else {
     hideOverlay();
   }
-  // Fever start sound (edge-triggered) + 3D Fever light.
-  if (f.active && !lastFeverActive) sound.playFever();
-  if (window.ForgeScene) window.ForgeScene.setFever(f.active);
-  lastFeverActive = f.active;
-}
-
-function renderChances(chances) {
-  const order = ["break", "damage", "hold", "success", "great"];
-  els.chances.innerHTML = "";
-  order.forEach((key, i) => {
-    const pm = chances[i];
-    const row = document.createElement("div");
-    row.className = "chance-row " + key;
-    const label = document.createElement("span");
-    label.className = "chance-label";
-    label.textContent = t(OUTCOME_KEYS[key]);
-    const bar = document.createElement("div");
-    bar.className = "chance-bar";
-    const fill = document.createElement("div");
-    fill.className = "chance-fill";
-    fill.style.width = (pm / 10) + "%";
-    bar.appendChild(fill);
-    const val = document.createElement("span");
-    val.className = "chance-val";
-    val.textContent = (pm / 10).toFixed(1) + "%";
-    row.appendChild(label);
-    row.appendChild(bar);
-    row.appendChild(val);
-    els.chances.appendChild(row);
-  });
+  // Fever start sound (edge-triggered).
+  if (s.fever.active && !lastFeverActive) sound.playFever();
+  lastFeverActive = s.fever.active;
 }
 
 function showOverlay(title, sub, showEndless) {
@@ -201,14 +220,8 @@ function toast(msg) {
   setTimeout(() => els.toast.classList.remove("show"), 2600);
 }
 
-function popOutcome(text, cls) {
-  els["outcome-pop"].textContent = text;
-  els["outcome-pop"].className = "pop show " + cls;
-  setTimeout(() => els["outcome-pop"].classList.remove("show"), 900);
-}
-
 // ---------------------------------------------------------------------------
-// Actions
+// Actions (called by in-scene taps, Space, or the end overlay)
 // ---------------------------------------------------------------------------
 function qualityLevel() {
   if (!settings) return "medium";
@@ -216,21 +229,50 @@ function qualityLevel() {
   return settings.quality;
 }
 
+function recordOutcome(o) {
+  if (o === lastOutcome) {
+    consecCount += 1;
+  } else {
+    lastOutcome = o;
+    consecCount = 1;
+  }
+  lastOutcomeLabel = t(OUTCOME_KEYS[o]);
+}
+
 async function doStrike() {
   if (striking || !state || state.state !== "playing") return;
+  // R-06: hammer cooldown — nextStrikeTime = now + 0.64/speed (speed 1.0
+  // in P0, no speed relics). Taps inside the window are ignored (the
+  // hammer is still cycling), exactly like the original's strikeReady.
+  const now = performance.now();
+  if (now < strikeReadyAt) return;
   striking = true;
+  // R-06: the cooldown anchor is the STRIKE START — nextStrikeTime =
+  // now + 0.64/speed (behavior.json hammer_strike.cooldownFormula),
+  // set BEFORE the Backend.invoke + the 255 ms impact wait. (AEGIS
+  // 2026-11-21 D1: anchoring it in `finally` after the wait made the
+  // real gate ~895 ms, so 12 taps at 700 ms gave only 6 strikes.)
+  strikeReadyAt = now + 640;
   sound.ensure();
-  // 3D hammer swing + spark burst (same 220ms timing as before).
+  // 3D hammer swing (real timing: raise 0.16s, down 0.095s, return
+  // 0.10s + 0.21s — behavior.json hammer_strike, speed 1.0).
   if (window.ForgeScene) window.ForgeScene.strike();
+  const swingStart = performance.now();
   try {
     const payload = await Backend.invoke("strike", {});
     if (!payload) return;
+    // R-06: the outcome is revealed at the IMPACT (impactDelayAtSpeed1Sec
+    // 0.255s after the swing starts), not when the API answers. Wait out
+    // the remainder so the grade/value/burst/flash land on the hammer hit.
+    const elapsed = performance.now() - swingStart;
+    if (elapsed < 255) await new Promise((r) => setTimeout(r, 255 - elapsed));
     state = payload.state;
     const o = payload.outcome;
-    popOutcome(t(OUTCOME_KEYS[o]), o);
+    recordOutcome(o);
     if (o === "great") sound.playGreat();
     else if (o === "break") {
       sound.playBreak();
+      if (window.ForgeScene) window.ForgeScene.addBrokenSword();
       if (payload.scrap > 0) toast(t("ui.scrap", [fmtGold(payload.scrap)]));
     } else if (o === "success" || o === "damage" || o === "hold") {
       sound.playStrike();
@@ -277,6 +319,12 @@ async function doEndDay() {
 async function doNewRun() {
   try {
     state = await Backend.invoke("new_run", {});
+    lastOutcome = null;
+    lastOutcomeLabel = null;
+    consecCount = 0;
+    swordKey = null;
+    swordHighestGrade = 0;
+    strikeReadyAt = 0;
     hideOverlay();
     render();
   } catch (e) {
@@ -298,9 +346,16 @@ async function doEndless() {
 // Settings
 // ---------------------------------------------------------------------------
 function defaultSettings() {
+  // R-20 — REAL defaults from the original (behavior.json
+  // settings_defaults, ForgeSettingsData..ctor 0x24FB25C +
+  // ForgeUserSettings.Defaults() 0x2503FA0): master/music/sfx 1.0 (100%),
+  // brightness 0.7 (70%), haptics true (panel row stays disabled on PC —
+  // no vibration motor), floorSwordLimit 30, hubControls false = FREE
+  // movement (not hub), showFps false. Quality + language defaults are
+  // NOT in the recovered data — "auto"/"vi" stay as marked approximations.
   return {
-    master: 80, music: 60, sfx: 90, haptics: false, brightness: 100,
-    quality: "auto", show_fps: false, floor_swords: 3, controls: "hub",
+    master: 100, music: 100, sfx: 100, haptics: true, brightness: 70,
+    quality: "auto", show_fps: false, floor_swords: 30, controls: "free",
     lock_on: false, language: "vi",
   };
 }
@@ -309,7 +364,7 @@ function applySettings() {
   if (!settings) return;
   LANG = settings.language === "en" ? "en" : "vi";
   document.documentElement.lang = LANG;
-  // Static text.
+  // Static text (settings panel + overlay buttons).
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     // The "auto" quality option carries the original's {0} placeholder:
     // fill it with the auto-resolved quality label.
@@ -325,11 +380,10 @@ function applySettings() {
   els["brightness-overlay"].style.opacity = String(((100 - settings.brightness) / 100) * 0.7);
   // FPS counter.
   els["fps-counter"].style.display = settings.show_fps ? "block" : "none";
-  // Floor swords (3D meshes on the floor).
+  // Broken swords on the floor (cap) + particle budget follow the setting.
   if (window.ForgeScene) window.ForgeScene.setFloorSwords(settings.floor_swords);
-  // Particle budget follows the quality setting.
   if (window.ForgeScene) window.ForgeScene.setQuality(qualityLevel());
-  // View mode.
+  // View mode: hub / lock-on = fixed work view; free = drag to look.
   if (settings.controls === "hub" || settings.lock_on) {
     viewOffset = { x: 0, y: 0 };
     if (window.ForgeScene) window.ForgeScene.setViewOffset(0, 0);
@@ -339,10 +393,6 @@ function applySettings() {
   // Settings panel controls.
   syncSettingsPanel();
   render();
-}
-
-function renderFloorSwords(n) {
-  if (window.ForgeScene) window.ForgeScene.setFloorSwords(n);
 }
 
 function syncSettingsPanel() {
@@ -466,9 +516,15 @@ function loop(now) {
 }
 
 // ---------------------------------------------------------------------------
-// View drag (controls = free) + click-to-strike (raycast pick in 3D)
+// Free-look drag (controls = free) + in-scene taps (raycast in 3D)
 // ---------------------------------------------------------------------------
 let downPos = null;
+
+// Drag range in pixels (0.004 rad/px in scene3d.js): ±785 px = a full
+// turn (needed to face the service window / bell behind the work view),
+// ±125 px pitch.
+const DRAG_X_MAX = 785;
+const DRAG_Y_MAX = 125;
 
 function bindDrag() {
   const scene = els.scene;
@@ -480,14 +536,19 @@ function bindDrag() {
   });
   scene.addEventListener("pointermove", (e) => {
     if (!drag) return;
-    viewOffset.x = Math.max(-80, Math.min(80, drag.ox + (e.clientX - drag.x)));
-    viewOffset.y = Math.max(-40, Math.min(40, drag.oy + (e.clientY - drag.y)));
+    viewOffset.x = Math.max(-DRAG_X_MAX, Math.min(DRAG_X_MAX, drag.ox + (e.clientX - drag.x)));
+    viewOffset.y = Math.max(-DRAG_Y_MAX, Math.min(DRAG_Y_MAX, drag.oy + (e.clientY - drag.y)));
     if (window.ForgeScene) window.ForgeScene.setViewOffset(viewOffset.x, viewOffset.y);
   });
   scene.addEventListener("pointerup", (e) => {
-    // Click (not a drag): raycast-pick the anvil/sword in the 3D scene.
+    // Click (not a drag): raycast-pick the 3D room.
     if (downPos && Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y) < 6) {
-      if (window.ForgeScene && window.ForgeScene.pickAt(e.clientX, e.clientY)) doStrike();
+      if (window.ForgeScene) {
+        const action = window.ForgeScene.pickAt(e.clientX, e.clientY);
+        if (action === "strike") doStrike();
+        else if (action === "tribute") doTribute();
+        else if (action === "endday") doEndDay();
+      }
     }
     downPos = null;
     drag = null;
@@ -502,12 +563,12 @@ async function boot() {
   collectEls();
   bindSettingsPanel();
   bindDrag();
-  els["btn-strike"].addEventListener("click", doStrike);
-  els["btn-tribute"].addEventListener("click", doTribute);
-  els["btn-endday"].addEventListener("click", doEndDay);
-  els["btn-settings"].addEventListener("click", () => toggleSettings());
   els["overlay-btn-new"].addEventListener("click", doNewRun);
   els["overlay-btn-endless"].addEventListener("click", doEndless);
+  // R-22 — REMADE (approved by OWNER 2026-11-21): the PC keys /
+  // interactions (Escape = settings, Space = strike, drag = free-look,
+  // click/tap = strike) are a REMADE control scheme — the original is a
+  // mobile touch game (no keyboard, no mouse); the PC bindings are ours.
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") toggleSettings();
     if (e.key === " " && els["settings-panel"].style.display !== "flex") {
@@ -521,8 +582,15 @@ async function boot() {
     if (!settings || typeof settings !== "object") settings = defaultSettings();
     settings = { ...defaultSettings(), ...settings };
     state = await Backend.invoke("new_run", {});
-    // 3D scene init (loads the original textures). If WebGL or a texture
-    // is unavailable, show a plain error — never a black window.
+    // Sword names (the original's own Vietnamese names).
+    try {
+      SWORD_NAMES = await (await fetch("sword-names.json")).json();
+    } catch (e) {
+      console.warn("sword-names.json failed to load", e);
+      SWORD_NAMES = {};
+    }
+    // 3D scene init (loads the real room + original textures). If WebGL
+    // or a texture is unavailable, show a plain error — never a black window.
     if (!window.ForgeScene) throw new Error("3D module failed to load (scene3d.js / three)");
     await window.ForgeScene.init(els.gl);
     els.loading.style.display = "none";

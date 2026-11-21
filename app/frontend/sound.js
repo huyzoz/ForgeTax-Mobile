@@ -19,9 +19,15 @@ class SoundEngine {
     this.musicBus = null;
     this.sfxBus = null;
     this.ambient = null;
-    this.masterVol = 0.8;
-    this.musicVol = 0.6;
-    this.sfxVol = 0.9;
+    // R-20 — REAL defaults (behavior.json settings_defaults): master /
+    // music / sfx are all 1.0 (100%). setVolumes() overwrites these from
+    // the settings as soon as they load; these are the pre-load values.
+    // REMADE — approved by OWNER 2026-11-21 (R-25): the timbres below are
+    // WebAudio-synthesized recreations, NOT the original's audio files
+    // (the 101 WAVs are reference only and are never shipped).
+    this.masterVol = 1.0;
+    this.musicVol = 1.0;
+    this.sfxVol = 1.0;
     this.muted = false;
   }
 
