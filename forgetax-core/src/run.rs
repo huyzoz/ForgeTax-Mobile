@@ -136,6 +136,14 @@ impl Run {
         self.swords.len().saturating_sub(self.current)
     }
 
+    /// Index of the current sword within the round's swords (0-based).
+    /// The frontend derives the sword's run serial from this + the round:
+    /// serial = (round - 1) * SWORD_SUPPLY + current + 1; the appearance
+    /// parent is (serial - 1) % 3 (ForgeSword.Initialize, BEHAVIOR.md §8.4).
+    pub fn current_index(&self) -> usize {
+        self.current
+    }
+
     /// Per-mille chances for the next strike on the current sword.
     pub fn chances(&self) -> [u32; 5] {
         match self.current_sword() {
