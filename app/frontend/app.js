@@ -22,6 +22,15 @@ const Backend = {
     if (this.isTauri()) {
       return window.__TAURI__.core.invoke(cmd, args || {});
     }
+    // Production (Tauri window) without the bridge means withGlobalTauri
+    // is off: fail with a clear message instead of fetching /api/ — the
+    // asset protocol answers unknown paths with index.html, which then
+    // dies as a confusing JSON parse error ("<!DOCTYPE ..." is not valid
+    // JSON). Dev mode (plain http server on localhost) still uses /api/.
+    const host = window.location.hostname || "";
+    if (host !== "localhost" && host !== "127.0.0.1") {
+      throw new Error("Tauri bridge missing (window.__TAURI__ not injected) — check withGlobalTauri in tauri.conf.json");
+    }
     const res = await fetch("/api/" + cmd, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

@@ -33,7 +33,7 @@
 // Sword prefabs are LAZY-LOADED one at a time (swords/<pid>.json, 60-450 KB
 // each) — the full 111-prefab set is 23 MB on disk and is never all loaded.
 
-import * as THREE from 'three';
+import * as THREE from './vendor/three.module.min.js';
 
 // ---------------------------------------------------------------------------
 // Small helpers
