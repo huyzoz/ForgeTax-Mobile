@@ -37,7 +37,7 @@ jobs:
       - name: Setup Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Core tests (80 tests: logic + mobile parity + scripted run)
+      - name: "Core tests (80 tests: logic + mobile parity + scripted run)"
         run: cargo test -p forgetax-core
 
       - name: Dev-server builds (test harness, not shipped)
