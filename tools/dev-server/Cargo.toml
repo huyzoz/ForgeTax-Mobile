@@ -1,0 +1,10 @@
+[package]
+name = "forgetax-dev-server"
+version = "0.1.0"
+description = "Dev/test harness ONLY (not shipped in the app): serves the P0 frontend over HTTP and answers /api/* with the real forgetax-core, so the UI can be exercised in a plain browser. No Tauri, no system libs needed."
+edition = "2021"
+
+[dependencies]
+forgetax-core = { path = "../../forgetax-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
