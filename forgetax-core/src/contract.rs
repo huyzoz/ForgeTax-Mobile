@@ -156,9 +156,21 @@ mod tests {
 
     #[test]
     fn endless_quotas_grow_by_1_2() {
-        assert_eq!(quota_for(25), Some(2_400_000.0));
-        assert_eq!(quota_for(26), Some(2_880_000.0));
-        assert_eq!(quota_for(27), Some(3_456_000.0));
+        // Endless quotas are doubles: 2_000_000 * 1.2^n. Exact equality
+        // is platform-dependent (MSVC gives 3455999.9999999995 for
+        // round 27 where Linux gives exactly 3456000.0 — CI run #2),
+        // so compare with a relative tolerance of 1e-9 (a sub-gold
+        // error; gameplay displays quotas rounded anyway).
+        let approx = |round: u32, expected: f64| {
+            let v = quota_for(round).expect("quota exists");
+            assert!(
+                (v - expected).abs() <= expected * 1e-9,
+                "round {round}: quota {v} != {expected}"
+            );
+        };
+        approx(25, 2_400_000.0);
+        approx(26, 2_880_000.0);
+        approx(27, 3_456_000.0);
         assert_eq!(quota_for(0), None);
     }
 
