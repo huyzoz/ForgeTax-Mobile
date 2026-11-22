@@ -49,6 +49,10 @@ struct StateSnap {
     sword_index: usize,
     swords_left: usize,
     chances: [u32; 5],
+    // F-6 — the Ledger's printed probability grid (see
+    // app/src-tauri/src/main.rs for the source note).
+    deck: [f64; 5],
+    seal: f64,
     fever: FeverSnap,
     relics: Vec<String>,
     strikes: u64,
@@ -94,6 +98,8 @@ fn snapshot(run: &Run) -> StateSnap {
         sword_index: run.current_index(),
         swords_left: run.swords_left(),
         chances: run.chances(),
+        deck: run.deck_raw(),
+        seal: run.seal_factor(),
         fever: FeverSnap {
             charge: run.fever.charge(),
             needed: run.fever.charge_needed(),
