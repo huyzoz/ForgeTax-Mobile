@@ -170,6 +170,35 @@ let floorSwordCap = 30;           // R-20: floorSwordLimit 30 (real default)
 let lastOutcome = null;
 let lastView = null;   // last update() payload (for redraws on language change)
 let animT = 0;
+// F-1 (2026-11-21 fix round) — PC walking (ForgeFirstPerson, behavior.json
+// forge_first_person). The camera POSITION now moves: WASD + arrows at
+// walkSpeedBase 2.09 m/s (SpeedScale 1 in P0), eye height fixed at the
+// work eye Y = 1.76 (data.camera.eye). Walk bounds = the MAIN ROOM
+// (LAYOUT.md §2: X -3.0..3.2 x Z -2.5..3.1, ~6.2 x 5.6 m — the Z -6.25
+// tail is the barred dragon tunnel, NOT walkable), with a 0.35 m margin
+// (TODO-RE: the margin is our choice, no collision data in the
+// extraction). Colliders are simple circles around the three big
+// fixtures (TODO-RE: no collision data in the extraction — the radii
+// are approximations from the fixtures' footprints).
+const WALK_SPEED = 2.09; // behavior.json walkSpeedBase
+const WALK_BOUNDS = { minX: -2.68, maxX: 2.81, minZ: -2.15, maxZ: 2.78 };
+const WALK_COLLIDERS = [
+  { x: -1.07, z: 2.19, r: 0.8 },   // anvil
+  { x: 2.236, z: 1.927, r: 1.15 }, // furnace
+  { x: 0.5, z: -1.8, r: 0.85 },    // transaction counter
+];
+let camPos = null; // THREE.Vector3, the walk position (starts at the work eye)
+let moveKeys = {}; // {w,a,s,d,up,down,left,right} booleans from app.js
+let controlsMode = 'free'; // 'free' (walk + drag) | 'hub' (fixed work view)
+let lockOn = false; // lock the camera on the anvil (work view only)
+let returnToWork = false; // gliding back to the work eye for a strike
+let returnToWorkResolve = null; // promise resolver for the glide
+let workBlendTarget = 1; // 1 = working (FOV 61), 0 = walking (FOV 69)
+let heldGroup = null; // the picked-up sword, attached to the camera
+let heldLight = null; // M3: view-model fill light (on only while holding)
+// F-9a — tribute golden ring (REMADE effect, see tributeRing()).
+let tributeRingMesh = null;
+let tributeRingT = -1; // ring flash clock (-1 = idle)
 // R-24 — work-view blend + Punch kick (behavior.json forge_first_person):
 // workBlend approaches its target (1 = working) at 1 - exp(-10*dt);
 // FOV = lerp(69, 61, clamp01(workBlend)) + kick * 0.35 (DAT 0.35);
@@ -427,14 +456,38 @@ function buildLights() {
   // the furnace mouth directly).
   // Hemisphere fill — stands in for the missing baked lightmaps/probes
   // (approximation, NOT original data). Warm from above (fire/ceiling),
-  // dark floor bounce. Level tuned 2026-11-21 from headless screenshots:
-  // the original albedos are very dark (flagstone mean RGB 40, iron 47),
-  // so 0.55/0.5 left the room pitch black; 3.0/2.0 was still dim on the
-  // anvil; 4.0/2.5 reads as the original's moody-but-visible forge.
-  const hemi = new THREE.HemisphereLight(0x8a6a4a, 0x1a120c, 4.0);
+  // dark floor bounce.
+  // F-3a (2026-11-21 fix round): raised 4.0 -> 7.0 -> 18.0. The old
+  // level left the room pitch black on Ethan's live video (only the
+  // board was readable) — the original's albedos are ~0.02-0.05 linear,
+  // so the fill must be much stronger for the room to read like video 2
+  // (warm brick walls, anvil sword, 5-sword rack all visible at
+  // brightness 70%). 7.0 was still too dark in the headless screenshots
+  // (the anvil area stayed black, the held sword blade read as a black
+  // silhouette) — 18.0 is the second pass, tuned from screenshots vs
+  // v2all frames. If the room still reads dark on the EliteBook, this
+  // is the number to raise (the original's baked lightmaps are the
+  // real source, absent from the bundle — R-08).
+  // DIAG 2026-11-22 (furnace white blowout): 18.0 was TOO strong for the
+  // LIGHT stones — the furnace arch/jamb stones carry "Rough exposed
+  // stone core" (albedo 0.31), so hemi 18 alone gives 18*0.31/pi = 1.8
+  // on them (clipped white with the fireGlow on top). The dark wood
+  // (0.02) can never read from a uniform fill anyway (it needs 50+);
+  // it reads from the localised workGlow + spots. Lowered to 8.0 —
+  // the arch stones then sit at ~0.8-1.0 (bright warm, not clipped)
+  // and the brick at ~0.5. See tools/dev-server/furnace-diag.js.
+  // M4 (AEGIS 2026-11-22): the mouth CORE was still near-white
+  // (211/255) at 8.0 — the hemi alone gives the 0.31 stones 0.79, and
+  // the fireGlow adds 0.82 on top. Lowered to 6.0 (core ~1.2 total,
+  // warm not cream) — the room gets a touch darker, the workGlow keeps
+  // the anvil readable, and Ethan plays at 200% anyway.
+  const hemi = new THREE.HemisphereLight(0x8a6a4a, 0x1a120c, 6.0);
   scene.add(hemi);
   // Small ambient so the shadowed corners are never pure black.
-  const amb = new THREE.AmbientLight(0x241a12, 2.5);
+  // F-3a: raised 2.5 -> 4.0 -> 9.0, then lowered to 3.0 (same diag
+  // reason as the hemisphere fill — the light stones clip first).
+  // M4 (AEGIS 2026-11-22): lowered to 2.0 with the hemi (same reason).
+  const amb = new THREE.AmbientLight(0x241a12, 2.0);
   scene.add(amb);
   fillLights.hemi = hemi;
   fillLights.amb = amb;
@@ -449,7 +502,10 @@ function buildLights() {
   // (a) Work light over the anvil — same warm colour as the real 'Work
   // lamp pool' spot (1.0, 0.74, 0.43); lights the anvil face + sword so
   // the player can see what they are striking.
-  const workGlow = new THREE.PointLight(new THREE.Color(1.0, 0.74, 0.43), 14, 3.5, 2);
+  // F-3a: raised 14 -> 22 -> 40 (the anvil sword must read at
+  // brightness 70% — at 22 the held/anvil blade still read as a black
+  // silhouette in the headless screenshots).
+  const workGlow = new THREE.PointLight(new THREE.Color(1.0, 0.74, 0.43), 40, 3.5, 2);
   workGlow.position.set(-1.07, 2.1, 2.19);
   scene.add(workGlow);
   // (b) Fire glow just outside the furnace mouth — same warm colour as
@@ -461,8 +517,30 @@ function buildLights() {
   // the exterior faces point away from it — so the furnace stayed a
   // black box; verified 2026-11-21.) The SoftFlame sprites + embers at
   // the bed itself are the visible fire.
-  const fireGlow = new THREE.PointLight(new THREE.Color(1.0, 0.59, 0.27), 12, 5, 2);
-  fireGlow.position.set(2.72, 1.2, 2.43);
+  // F-3a: raised 12 -> 18 -> 32 -> 20 -> 6, and MOVED out of the firebox
+  // mouth ([2.72, 1.2, 2.43] -> [2.95, 1.35, 2.75], in front of the
+  // furnace toward the room). At 32, placed inside the mouth, the
+  // inverse-square falloff blasted the firebox interior white
+  // (32/0.4^2 ≈ 200x on the Soot panel — the 07-furnace.png blowout).
+  // DIAG 2026-11-22 (furnace-diag.js, 5 variants): the blowout SURVIVED
+  // fill-off AND flames-hidden, and vanished ONLY when this light was
+  // switched off — so this light, not the fill or the flames, is the
+  // cause. It hits the "Rough exposed stone core" (albedo 0.31) on the
+  // arch/jamb stones around the mouth: 20/0.85^2 * 0.31/pi ≈ 2.8
+  // (clipped white). At 6 the stones sit at ~0.8 (bright warm, not
+  // clipped) and the brick at ~0.5; the orange coals (Ember emissive)
+  // carry the fire themselves. The original's furnace mouth shows
+  // ORANGE chunk coals with depth, not white (video 2 f_015). The real
+  // fire light is the 'Fire' spot (20) — this fill only warms the
+  // furnace area + surrounding brick.
+  // M4 (AEGIS 2026-11-22): the mouth CORE was still near-white (211/255)
+  // at 6 — the fireGlow alone gives the core stones 0.82 on top of the
+  // hemi's 0.79. Lowered to 3 (core ~1.2 total: fireGlow 0.41 + hemi
+  // 0.59 + amb 0.20 — warm, not cream). NOT adding extra coals: the 19
+  // clinker blocks are real layout data; inventing more would be
+  // fabrication (AEGIS suggested it, declined — Law 0).
+  const fireGlow = new THREE.PointLight(new THREE.Color(1.0, 0.59, 0.27), 3, 5, 2);
+  fireGlow.position.set(2.95, 1.35, 2.75);
   scene.add(fireGlow);
   fillLights.workGlow = workGlow;
   fillLights.fireGlow = fireGlow;
@@ -590,15 +668,29 @@ async function buildCatalogueSword(appearanceId) {
   // manifest at build time — e.g. id 1 brown [86,68,56], id 38 steel grey
   // [140,142,147]). NOT reproduced: the shader's per-texel palette lookup
   // (the Body mesh has one group/material, so the palette's per-part rows
-  // cannot be applied separately) and the shader's scalar params — the
-  // teal emissive below is still the R-09 remake proposal (kept + marked).
-  const mat = new THREE.MeshStandardMaterial({ metalness: 0.75, roughness: 0.45 });
+  // cannot be applied separately) and the shader's scalar params. The
+  // teal emissive is REMOVED (F-3b) — see below; this comment previously
+  // claimed it was "still kept", which was wrong (AEGIS O4, 2026-11-22).
+  // M3 (AEGIS 2026-11-22): metalness 0.75 + a dark room env left the
+  // blade a black silhouette at 70% (pixel 0-16/255). The original's
+  // SwordV2 is a CUSTOM shader, not standard PBR metal — so the blade
+  // reading as plain steel with its palette colour matters more than
+  // the 0.75 metalness number. Lowered to 0.5 (diffuse carries the
+  // palette) + envMapIntensity 2.0 (effective 1.0 with the scene's 0.5).
+  // TODO-RE / R-08: rendering approximation, not original shader data.
+  const mat = new THREE.MeshStandardMaterial({ metalness: 0.5, roughness: 0.45, envMapIntensity: 2.0 });
   if (rec.paletteColor) {
     mat.color.setRGB(rec.paletteColor[0] / 255, rec.paletteColor[1] / 255, rec.paletteColor[2] / 255, THREE.SRGBColorSpace);
   }
-  mat.emissive = new THREE.Color(0.04, 0.20, 0.24);
-  mat.emissiveIntensity = 0.55;
-  mat.emissiveMap = await loadTexture('SwordV2DetailAtlas.png', { srgb: true });
+  // F-3b (2026-11-21 fix round) — the teal emissive is REMOVED. CIPHER
+  // v2 (sword-catalogue note): SwordV2 emission ≈ 0 ("emission material
+  // = 0") — the SwordV2DetailAtlas is a DETAIL map, not a glow map. The
+  // old code used it as an emissiveMap with a teal emissive
+  // (0.04, 0.20, 0.24) × 0.55, so every sword glowed blue-cyan in the
+  // dark room; the broken floor swords (lying flat, full face to the
+  // camera) read as big blue sword shapes / horizontal blue bars in
+  // Ethan's live video (frames f_010/f_014/f_017). Swords are plain
+  // steel now — the atlas is no longer applied here at all.
   const mesh = new THREE.Mesh(geo, mat);
   const min = rec.bboxMin, max = rec.bboxMax;
   const cx = (min[0] + max[0]) / 2, cz = (min[2] + max[2]) / 2;
@@ -636,21 +728,19 @@ async function buildSwordPartMesh(part) {
   const idx = group ? Array.from(mesh.idx.subarray(group.start, group.start + group.count)) : [];
   geo.setIndex(idx);
   let mat = await buildMaterial(part.material, data.materials[part.material]);
-  // The blade's Steel + T_ForgeIron_Albedo albedo is ~0.01 linear (the
-  // texture is very dark, mean RGB 47), so the bare blade renders as a
-  // near-black sliver on the dark anvil. The original's blade is NOT
-  // bare Steel — the runtime SwordV2 system applies the teal
-  // SwordV2DetailAtlas (pid 1697) through the ForgeTax/SwordV2/Surface
-  // shader (LAYOUT.md §7). The exact shader application is TODO-RE, so
-  // the blade gets a documented approximation of that look: the real
-  // detail atlas as an emissive map with a teal emissive tint, so the
-  // blade reads as the original's veined steel instead of black. Only
-  // the blade (not the fittings) gets this.
+  // F-3b — the blade's teal emissive is REMOVED (same reason as
+  // buildCatalogueSword: SwordV2 emission ≈ 0, the detail atlas is not
+  // a glow map; the old emissive made every blade glow blue-cyan).
+  // The blade now renders as plain steel with its real albedo.
+  // M3 (AEGIS 2026-11-22): same metalness fix as the catalogue sword —
+  // 0.75 left the blade a black silhouette at 70%; 0.5 + envMapIntensity
+  // 2.0 lets the palette colour read (TODO-RE / R-08).
   if (part.name === 'Forged steel blade') {
     mat = mat.clone();
-    mat.emissive = new THREE.Color(0.04, 0.20, 0.24);
-    mat.emissiveIntensity = 0.55;
-    mat.emissiveMap = await loadTexture('SwordV2DetailAtlas.png', { srgb: true });
+    mat.emissive = new THREE.Color(0, 0, 0);
+    mat.emissiveIntensity = 0;
+    mat.metalness = 0.5;
+    mat.envMapIntensity = 2.0;
   }
   const m = new THREE.Mesh(geo, mat);
   m.position.set(part.pos[0], part.pos[1], part.pos[2]);
@@ -896,7 +986,7 @@ function boardXY(plane, worldPos) {
   ];
 }
 
-function boardText(plane, worldPos, text, { size = 44, color = '#f0e6d6', align = 'left', weight = 700, font = BOARD_FONT, maxWidth = 0 } = {}) {
+function boardText(plane, worldPos, text, { size = 44, color = '#f0e6d6', align = 'left', weight = 700, font = BOARD_FONT, maxWidth = 0, shadow = true } = {}) {
   let [x, y] = boardXY(plane, worldPos);
   const ctx = plane.ctx;
   // maxWidth (px): shrink the font until the string fits — the VI outcome
@@ -924,7 +1014,8 @@ function boardText(plane, worldPos, text, { size = 44, color = '#f0e6d6', align 
   // pivot is TODO-RE (LAYOUT.md §10).
   // NOTE: the drop shadow below is a REMADE readability aid (the
   // original's TextMesh has no shadow) — kept so the text stays legible
-  // on the unlit board planes.
+  // on the unlit board planes. The ledger (cream paper, F-6) passes
+  // shadow:false — a black shadow on cream paper reads as a smudge.
   let a = align;
   const w = ctx.measureText(text).width;
   if (a === 'left' && x + w > plane.canvasW) a = 'right';
@@ -932,8 +1023,10 @@ function boardText(plane, worldPos, text, { size = 44, color = '#f0e6d6', align 
   if (a === 'center') x = Math.max(w / 2, Math.min(plane.canvasW - w / 2, x));
   ctx.textAlign = a;
   ctx.textBaseline = 'middle';
-  ctx.shadowColor = 'rgba(0,0,0,0.85)';
-  ctx.shadowBlur = 6;
+  if (shadow) {
+    ctx.shadowColor = 'rgba(0,0,0,0.85)';
+    ctx.shadowBlur = 6;
+  }
   ctx.fillText(text, x, y);
   ctx.shadowBlur = 0;
 }
@@ -1095,6 +1188,106 @@ function drawLedger(view) {
   const p = boardPlanes.ledger;
   clearBoard(p);
   if (!view) return;
+  // F-6 — the printed probability grid (video 2 frame f_018). The
+  // original's ledger paper is CREAM and carries a printed grid: the
+  // raw FillDeck counts (one column per outcome, 20 rows each, filled
+  // green "+" cells = the count, empty □ outlines for the rest), the
+  // total, the seal factor and the upgrade-risk note. Ledger GO 409 has
+  // mesh null and materials [] — NO printed paper texture exists in the
+  // data, so the grid is runtime-drawn in the original too (and the
+  // text is VI-localized, so it cannot be a baked texture). The grid
+  // below is drawn from the LIVE core values (view.deck = Run::deck_raw,
+  // view.seal = Run::seal_factor) — the frame's 4/12/16/16/20 = 68 is
+  // the OWNER's late-game run, NOT the starter's [9,2,5,18,4] = 38.
+  // The grid's POSITION on the paper is a REMADE presentation choice
+  // (not in the extraction): it sits below the recorded live lines
+  // (the quota/tribute TextMesh at the anchor), in the lower 2/3 of
+  // the paper. The tongs + hammer props lying on the paper in f_018
+  // have no mesh in the extraction — skipped, noted in the handoff.
+  const ctx = p.ctx;
+  ctx.fillStyle = '#f2e8d0'; // cream paper (f_018)
+  ctx.fillRect(0, 0, p.canvasW, p.canvasH);
+  ctx.strokeStyle = 'rgba(93,73,50,0.5)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(4, 4, p.canvasW - 8, p.canvasH - 8);
+  const deck = view.deck || [9, 2, 5, 18, 4];
+  const seal = view.seal != null ? view.seal : 0.85;
+  const total = deck.reduce((a, b) => a + b, 0);
+  const FONT = 'Be Vietnam Pro, sans-serif';
+  // Left info column: total + seal factor + note (the original's own
+  // strings, from vi.txt via buildView).
+  ctx.fillStyle = '#5D4932';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.font = `700 26px ${FONT}`;
+  ctx.fillText(view.ledgerTotal || ('TỔNG ' + total), 18, 322);
+  ctx.font = `700 20px ${FONT}`;
+  ctx.fillText((view.ledgerSeal || 'TRỌNG SỐ GÃY x') + seal.toFixed(2).replace(/0$/, ''), 18, 352);
+  ctx.font = `400 13px ${FONT}`;
+  ctx.fillStyle = '#7A6A55';
+  const note = view.ledgerNote || 'NGUY CƠ NÂNG CẤP HIỂN THỊ TẠI ĐE';
+  // Wrap the note to the info column width (124 px).
+  const words = note.split(' ');
+  let line = '', ny = 380;
+  for (const w of words) {
+    if (ctx.measureText(line + w).width > 124 && line) { ctx.fillText(line.trim(), 18, ny); ny += 16; line = ''; }
+    line += w + ' ';
+  }
+  if (line.trim()) ctx.fillText(line.trim(), 18, ny);
+  // The 5 columns: headers + 20 rows of cells + totals.
+  const colX0 = 152, colW = (p.canvasW - colX0 - 12) / 5, gridTop = 306, rowH = 14, rows = 20;
+  const labels = (view.channels || []).map((c) => c.label);
+  // O6 (AEGIS round 5): the header font was 11px bold, but a column is
+  // only 69.6 px wide — "ĐẠI THÀNH CÔNG" (~98 px) overflowed into the
+  // neighbouring columns ("GIỮTHÀNHCÔNG") and was cut off at the paper's
+  // edge ("ĐẠI THÀNH CÔ"), proven by the frontal close-up
+  // 12-ledger-closeup.png. Headers are now 7px (11px → 10px → 8px still
+  // left "ĐẠI THÀNH" wider than its column — Be Vietnam Pro bold renders
+  // Vietnamese ~1.0× the font size per character, so 8px gives ~64 px
+  // for "ĐẠI THÀNH"; run 8's close-up still showed "THÀNHĐẠI THÀNH"
+  // colliding) and any header wider than its column is split over two
+  // lines at the space ("ĐẠI THÀNH" / "CÔNG"), both lines still above
+  // the first grid row (gridTop+24).
+  ctx.textAlign = 'center';
+  for (let i = 0; i < 5; i++) {
+    const cx = colX0 + colW * i + colW / 2;
+    const label = labels[i] || '';
+    ctx.fillStyle = '#5D4932';
+    // O6c (run 8, 2026-11-22): the header font MUST be reset here, inside
+    // the loop. It was set once before the loop (7px), but the grid-cell
+    // drawing below sets ctx.font to 12px (filled "+") and the totals
+    // line sets it to 16px — so columns 2–5 were measured AND drawn at
+    // the stale 16px, not 7px, which is why "THÀNH CÔNG" / "ĐẠI THÀNH
+    // CÔNG" still overlapped after the 11px → 10px → 8px → 7px reductions.
+    // (The reductions were real — the served file had 7px — but the
+    // stale-font leak overrode them from column 2 onward.)
+    ctx.font = `700 7px ${FONT}`;
+    if (ctx.measureText(label).width > colW - 4 && label.includes(' ')) {
+      const parts = label.split(' ');
+      const line2 = parts.pop();
+      ctx.fillText(parts.join(' '), cx, gridTop + 2);
+      ctx.fillText(line2, cx, gridTop + 14);
+    } else {
+      ctx.fillText(label, cx, gridTop + 8);
+    }
+    const count = Math.round(deck[i] || 0);
+    for (let r = 0; r < rows; r++) {
+      const cy = gridTop + 24 + r * rowH + rowH / 2;
+      const filled = r < count;
+      if (filled) {
+        ctx.fillStyle = '#2E7D32';
+        ctx.font = `700 12px ${FONT}`;
+        ctx.fillText('+', cx, cy);
+      } else {
+        ctx.strokeStyle = 'rgba(93,73,50,0.6)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx - 5, cy - 5, 10, 10);
+      }
+    }
+    ctx.fillStyle = '#5D4932';
+    ctx.font = `700 16px ${FONT}`;
+    ctx.fillText(String(count), cx, gridTop + 24 + rows * rowH + 14);
+  }
   const px = textMeshPx(64, 0.009, p);
   const lineH = px * 1.12;
   const anchor = [-2.252, 2.185, 2.605];
@@ -1126,10 +1319,10 @@ function drawLedger(view) {
       anchor[1] - p.basis.up.y * i * stepM,
       anchor[2] - p.basis.up.z * i * stepM,
     ];
-    boardText(p, wp, line, { size: px, color: '#5D4932', align: 'left', maxWidth: maxW });
+    boardText(p, wp, line, { size: px, color: '#5D4932', align: 'left', maxWidth: maxW, shadow: false });
   });
   if (view.anger > 0) {
-    boardText(p, [-1.98, 1.45, 2.632], 'Cơn giận của rồng: ' + view.anger + '/3', { size: 36, color: '#C7746A' });
+    boardText(p, [-1.98, 1.45, 2.632], 'Cơn giận của rồng: ' + view.anger + '/3', { size: 36, color: '#C7746A', shadow: false });
   }
   p.tex.needsUpdate = true;
 }
@@ -1583,8 +1776,9 @@ function spawnBurst(kind) {
   const tex = texCache.get('cfxr_electric_spark.png');
   if (!tex) return;
   // TODO-RE / R-13: the per-strike burst count is NOT in the data.
+  // F-2: Low halves the burst count (burstMultiplier).
   const counts = { low: 10, medium: 24, high: 48 };
-  const n = (counts[quality] || 24) * (kind === 'break' ? 2 : 1);
+  const n = Math.max(1, Math.round((counts[quality] || 24) * burstMultiplier())) * (kind === 'break' ? 2 : 1);
   // TODO-RE / R-13: the per-kind burst TINTS are NOT in the data
   // either. The 'Hammer sparks' PS startColor is WHITE [1,1,1,1]
   // (effects.json, initial.startColor); the orange [1.0, 0.39, 0.045,
@@ -1685,6 +1879,70 @@ function applyCamera(dt) {
     rewardAge += dt;
     quakeAge += dt;
   }
+  // F-1 — walking (ForgeFirstPerson): WASD/arrows move the eye at
+  // 2.09 m/s (behavior.json walkSpeedBase) in the view direction,
+  // clamped to the main-room bounds + the simple circle colliders.
+  // Walking cancels a work-view glide and leaves the work view
+  // (workBlendTarget -> 0, FOV 69). Hub / lock_on locks the position
+  // at the work eye (fixed view).
+  if (dt && camPos) {
+    const walking = controlsMode === 'free' && !lockOn && !returnToWork &&
+      (moveKeys.w || moveKeys.a || moveKeys.s || moveKeys.d || moveKeys.up || moveKeys.down || moveKeys.left || moveKeys.right);
+    if (walking) {
+      const fw = (moveKeys.w || moveKeys.up ? 1 : 0) - (moveKeys.s || moveKeys.down ? 1 : 0);
+      const rt = (moveKeys.d || moveKeys.right ? 1 : 0) - (moveKeys.a || moveKeys.left ? 1 : 0);
+      const sy = Math.sin(viewYaw), cy = Math.cos(viewYaw);
+      let mx = (-sy * fw + cy * rt), mz = (-cy * fw - sy * rt);
+      const len = Math.hypot(mx, mz);
+      if (len > 0) {
+        mx /= len; mz /= len;
+        const step = WALK_SPEED * dt;
+        let nx = camPos.x + mx * step, nz = camPos.z + mz * step;
+        nx = clamp(nx, WALK_BOUNDS.minX, WALK_BOUNDS.maxX);
+        nz = clamp(nz, WALK_BOUNDS.minZ, WALK_BOUNDS.maxZ);
+        for (const c of WALK_COLLIDERS) {
+          const dx = nx - c.x, dz = nz - c.z;
+          const d = Math.hypot(dx, dz);
+          if (d < c.r && d > 0.001) { nx = c.x + dx / d * c.r; nz = c.z + dz / d * c.r; }
+        }
+        camPos.set(nx, camPos.y, nz);
+        workBlendTarget = 0;
+      }
+    }
+    // Strike return — glide back to the work eye before a strike
+    // (behavior.json forge_first_person: moveToWorkStandSpeed 3.5 m/s,
+    // workStandReach 0.1 m, workArriveTimeout 0.75 s, rotationSlerpRate
+    // exp(-12dt), workBlendRate 1-exp(-10dt)). The promise resolves
+    // when the eye is within reach.
+    if (returnToWork) {
+      const target = new THREE.Vector3(data.camera.eye[0], data.camera.eye[1], data.camera.eye[2]);
+      const d = camPos.distanceTo(target);
+      if (d <= 0.1) {
+        camPos.copy(target);
+        returnToWork = false;
+        workBlendTarget = 1;
+        if (returnToWorkResolve) { const r = returnToWorkResolve; returnToWorkResolve = null; r(); }
+      } else {
+        const step = 3.5 * dt;
+        camPos.lerp(target, Math.min(1, step / d));
+        const k = 1 - Math.exp(-12 * dt);
+        viewYaw += shortestAngle(workYaw - viewYaw) * k;
+        viewPitch += (workPitch - viewPitch) * k;
+        workBlendTarget = 1;
+      }
+    }
+    if (controlsMode === 'hub' || lockOn) {
+      camPos.set(data.camera.eye[0], data.camera.eye[1], data.camera.eye[2]);
+      viewYaw = workYaw;
+      viewPitch = workPitch;
+      workBlendTarget = 1;
+    }
+    // Work blend approaches its target (1 = working, FOV 61; 0 =
+    // walking/free, FOV 69) at 1 - exp(-10*dt) (behavior.json
+    // workBlendRate).
+    const bk = 1 - Math.exp(-10 * dt);
+    workBlend += (workBlendTarget - workBlend) * bk;
+  }
   const DEG = Math.PI / 180;
   let px = 0, py = 0, yaw = 0, pitch = 0, roll = 0, fovDelta = 0;
   // Fever shake (only while working and power > 0). The age is the
@@ -1731,16 +1989,23 @@ function applyCamera(dt) {
   fovDelta += punchKick * 0.35;
   pitch -= punchKick * DEG;
   camera.rotation.set(viewPitch + pitch, viewYaw + yaw, roll, 'YXZ');
-  camera.position.set(
-    data.camera.eye[0] + px,
-    data.camera.eye[1] + py,
-    data.camera.eye[2],
-  );
+  // F-1 — the camera eye is now the WALK position (camPos), not the
+  // fixed spawn eye; the shake offsets (px/py) still apply on top.
+  const eyeX = camPos ? camPos.x : data.camera.eye[0];
+  const eyeY = camPos ? camPos.y : data.camera.eye[1];
+  const eyeZ = camPos ? camPos.z : data.camera.eye[2];
+  camera.position.set(eyeX + px, eyeY + py, eyeZ);
   const fov = 69 + (61 - 69) * clamp(workBlend, 0, 1) + fovDelta;
   if (Math.abs(camera.fov - fov) > 0.001) {
     camera.fov = fov;
     camera.updateProjectionMatrix();
   }
+}
+
+function shortestAngle(a) {
+  while (a > Math.PI) a -= 2 * Math.PI;
+  while (a < -Math.PI) a += 2 * Math.PI;
+  return a;
 }
 
 // Tap targets — invisible Box3 proxies at the real ForgeInteractable
@@ -1814,12 +2079,226 @@ function addBrokenSword() {
     const yawQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), i * 0.5);
     g.quaternion.copy(yawQ).multiply(swordBasisQuat());
     scene.add(g);
-    brokenSwords.push(g);
+    // F-1/E — broken swords are pickable records now (not bare groups):
+    // {group, appearanceId, x, z, pickedUp}. The E pickup removes the
+    // group from the scene and marks it pickedUp; putting it back
+    // re-adds the same group at its position.
+    brokenSwords.push({ group: g, appearanceId, x, z, pickedUp: false });
     while (brokenSwords.length > floorSwordCap) {
       const old = brokenSwords.shift();
-      scene.remove(old);
+      scene.remove(old.group);
     }
   });
+}
+
+// ---------------------------------------------------------------------------
+// E pickup (F-1 + OWNER 2026-11-21 23:47) — "Lấy kiếm" (vi.txt
+// touch.take_sword): press E near a sword to pick it up, press E again
+// near its origin to put it back. Reach: reachFreeMove.sword 2.2 m
+// (behavior.json forge_interactables). The held sword is shown attached
+// to the camera (blade up-right, hilt bottom-centre, like video 2 frame
+// f_035) — the exact held pose is TODO-RE (no held-pose data in the
+// extraction; tuned by screenshot vs f_035).
+//   anvil sword  — E near the anvil picks up the CURRENT sword (the
+//                  anvil goes empty; strikes while empty swing only,
+//                  the original's noSwordLockoutSec 3.2). E near the
+//                  anvil puts it back; E near the bell/window while
+//                  holding it offers it as tribute (DepositHeldSword).
+//   floor sword  — E near a broken floor sword picks it up; E near its
+//                  origin puts it back. (It stays a broken sword —
+//                  picking it up does not repair it.)
+//   counter sword — E near a resting counter sword picks it up (held
+//                  visual only). Placing a counter sword ON THE ANVIL
+//                  is disallowed: the counter swords are the round's
+//                  next swords and the core's current-sword state would
+//                  desync — P1 follow-up (handoff). E near its origin
+//                  puts it back.
+// The scene owns only the VISUALS (hide/show + held sword); app.js owns
+// the held-state machine and the backend calls.
+// ---------------------------------------------------------------------------
+const REACH_SWORD = 2.2; // behavior.json reachFreeMove.sword
+const BELL_POS = new THREE.Vector3(1.654, 1.17, -1.609); // service-window bell
+const restingPickedUp = new Set(); // indices of picked-up counter swords
+
+function _distToCam(p) {
+  if (!camPos) return Infinity;
+  return Math.hypot(p.x - camPos.x, p.z - camPos.z);
+}
+
+function tryPickup() {
+  if (heldGroup) return null;
+  let best = null, bestD = REACH_SWORD;
+  // Anvil sword (the current sword, at its spawn position).
+  if (swordGroup && swordGroup.visible) {
+    const d = _distToCam(swordGroup.position);
+    if (d <= bestD) { bestD = d; best = { kind: 'anvil', appearanceId: currentAppearanceId }; }
+  }
+  // Broken floor swords.
+  brokenSwords.forEach((rec, i) => {
+    if (rec.pickedUp) return;
+    const d = _distToCam(rec);
+    if (d <= bestD) { bestD = d; best = { kind: 'floor', index: i, appearanceId: rec.appearanceId }; }
+  });
+  // Resting counter swords.
+  restingSwords.forEach((s, i) => {
+    if (restingPickedUp.has(i)) return;
+    const d = _distToCam(s.position);
+    if (d <= bestD) { bestD = d; best = { kind: 'counter', index: i, appearanceId: 1 }; }
+  });
+  if (!best) return null;
+  if (best.kind === 'anvil') swordGroup.visible = false;
+  else if (best.kind === 'floor') { brokenSwords[best.index].pickedUp = true; scene.remove(brokenSwords[best.index].group); }
+  else if (best.kind === 'counter') { restingPickedUp.add(best.index); scene.remove(restingSwords[best.index]); }
+  return best;
+}
+
+function tryPlaceOrDeposit(held) {
+  if (!held || !camPos) return null;
+  if (held.kind === 'anvil') {
+    // Near the bell/window while holding the current sword -> tribute.
+    if (_distToCam(BELL_POS) <= REACH_SWORD) return { action: 'deposit' };
+    // Near the anvil -> place it back.
+    if (swordGroup && _distToCam(swordGroup.position) <= REACH_SWORD) {
+      swordGroup.visible = true;
+      return { action: 'place-anvil' };
+    }
+    return null;
+  }
+  if (held.kind === 'floor') {
+    const rec = brokenSwords[held.index];
+    if (rec && Math.hypot(rec.x - camPos.x, rec.z - camPos.z) <= REACH_SWORD) {
+      rec.pickedUp = false;
+      scene.add(rec.group);
+      return { action: 'putback-floor', floorIndex: held.index };
+    }
+    return null;
+  }
+  if (held.kind === 'counter') {
+    const s = restingSwords[held.index];
+    if (s && _distToCam(s.position) <= REACH_SWORD) {
+      restingPickedUp.delete(held.index);
+      scene.add(s);
+      return { action: 'putback-counter', counterIndex: held.index };
+    }
+    return null;
+  }
+  return null;
+}
+
+async function setHeldSword(appearanceId) {
+  clearHeldSword();
+  const g = (await buildCatalogueSword(appearanceId)) || (await buildSwordGroup());
+  if (!g) return false;
+  // Held pose (TODO-RE, matched to video 2 frame f_035): the blade
+  // points up-right, the hilt sits bottom-centre of the screen. The
+  // sword's +X (blade, after swordBasisQuat) is rotated 55° toward +Y
+  // in camera space.
+  const qz = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), THREE.MathUtils.degToRad(55));
+  g.quaternion.copy(qz).multiply(swordBasisQuat());
+  g.position.set(0.28, -0.32, -0.55);
+  // M3 (AEGIS round 5/6, 2026-11-22) — neutral emissive lift for the
+  // HELD sword only. The held blade's flat receives ~0 diffuse from
+  // every light (proven in heldlight-diag: a scene-child PointLight at
+  // intensity 300, distance 0, decay 0 lit the whole anvil area white
+  // but left the flat at 6/255; metalness 0 did not fix it either;
+  // the flat's world normal DOES face the light, dot 0.955, and a
+  // MeshBasicMaterial renders the blade white, so the geometry is
+  // fine — the Standard-material diffuse simply does not reach this
+  // flat, for a reason not yet understood). The original's held sword
+  // IS readable (video 2 f_035), so the view-model gets a small
+  // emissive in the palette's OWN colour (the material's colour,
+  // cloned — never a hue shift) at intensity 0.5: measured median
+  // 122.9/255 on the blade diagonal (vs 6.9 without it), a warm
+  // readable steel, not a glow. This is NOT the R-09 teal emissive
+  // (wrong atlas as emissiveMap + teal colour, withdrawn in F-3b for
+  // causing the blue artifact) — no emissiveMap, no colour shift,
+  // held sword only (the anvil/floor/counter swords are lit by
+  // workGlow and read fine without it). TODO-RE / R-08: a view-model
+  // readability approximation, not original shader data (CIPHER v2:
+  // SwordV2 emission ≈ 0).
+  const heldMesh = g.children.find((c) => c.isMesh);
+  if (heldMesh) {
+    heldMesh.material = heldMesh.material.clone();
+    heldMesh.material.emissive = heldMesh.material.color.clone();
+    heldMesh.material.emissiveIntensity = 0.5;
+  }
+  camera.add(g);
+  heldGroup = g;
+  // M3: the view-model fill light turns on with the sword (off when the
+  // hands are empty — see the init comment for why it exists).
+  if (heldLight) heldLight.intensity = 3;
+  return true;
+}
+
+function clearHeldSword() {
+  if (!heldGroup) return;
+  camera.remove(heldGroup);
+  heldGroup = null;
+  if (heldLight) heldLight.intensity = 0;
+}
+
+// M3 — heldLightTick: keep the view-model fill light on the held sword.
+// The light is a child of the SCENE (a camera-child light did not affect
+// the render — see the init comment), so its world position is recomputed
+// every frame. It is placed 0.35 m in front of the camera, slightly
+// above the sword line: the held sword hangs ~0.55 m ahead of the lens
+// (local [0.28, -0.32, -0.55], blade up-right 55°), so this puts the
+// light just off the blade's midpoint, on the camera side, lighting the
+// flat that faces the camera. The position is computed from
+// camera.position + camera.getWorldDirection() — both set directly by
+// applyCamera every frame — NOT from heldGroup.matrixWorld, which can
+// be stale between renders (the first version used matrixWorld and the
+// light stayed stuck at [0,0,0] in the diag). Off (intensity 0)
+// whenever the hands are empty, so the room's look is unchanged then.
+const _hlFwd = new THREE.Vector3();
+function heldLightTick() {
+  if (!heldLight || !heldGroup || heldLight.intensity <= 0) return;
+  camera.getWorldDirection(_hlFwd);
+  heldLight.position.copy(camera.position).addScaledVector(_hlFwd, 0.35);
+  heldLight.position.y += 0.05;
+}
+
+// F-9a — tribute golden ring (REMADE effect): the original shows a
+// GOLDEN spiked halo ring hugging the offered sword (video 2, tribute
+// frames) + the "ĐÃ DÂNG" line. No ring mesh exists in the extraction
+// (GO 409 / layout data has no ring), so the ring is a REMADE visual
+// (a gold torus, ~1 s fade). Called by app.js on a successful tribute.
+function tributeRing(x, y, z) {
+  if (!tributeRingMesh) {
+    const geo = new THREE.TorusGeometry(0.55, 0.05, 12, 48);
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37, emissive: 0xa67c00, emissiveIntensity: 1.5,
+      metalness: 0.8, roughness: 0.3, transparent: true,
+    });
+    tributeRingMesh = new THREE.Mesh(geo, mat);
+    tributeRingMesh.visible = false;
+    scene.add(tributeRingMesh);
+  }
+  // Default: the anvil sword (the bell-click tribute offers the sword
+  // on the anvil). The E-deposit passes the bell position instead.
+  const s = (x != null && y != null && z != null) ? [x, y, z] : data.sword.spawn.world_position;
+  tributeRingMesh.position.set(s[0], s[1], s[2]);
+  tributeRingMesh.visible = true;
+  tributeRingT = 0;
+}
+
+function tributeRingTick(dt) {
+  if (tributeRingT < 0 || !tributeRingMesh) return;
+  tributeRingT += dt;
+  const t = tributeRingT;
+  if (t >= 1) { tributeRingMesh.visible = false; tributeRingT = -1; return; }
+  // Face the camera (a halo hugging the sword), grow 0.6 -> 1.3, fade.
+  tributeRingMesh.lookAt(camera.position);
+  const s = 0.6 + 0.7 * t;
+  tributeRingMesh.scale.set(s, s, s);
+  tributeRingMesh.material.opacity = 1 - t;
+}
+
+// F-8 — the Fever amount (0..1) for the DOM full-screen teal overlay
+// (app.js reads this every frame; the overlay opacity is
+// feverAmount x 0.45 — TODO-RE, no tint value in behavior.json fever).
+function getFeverAmount() {
+  return feverAmount;
 }
 
 // ---------------------------------------------------------------------------
@@ -1922,10 +2401,34 @@ function strike() {
 
 function setQuality(q) {
   quality = q || 'medium';
-  // The particle systems are rate-based now (R-10/R-11/R-12: no quality
-  // tiers in the original), so quality no longer rebuilds them. It only
-  // still affects the spark burst count (R-13, TODO-RE — the per-strike
-  // burst count is not in the data).
+  // F-2 (2026-11-21 fix round) — "Low" MUST actually reduce cost.
+  // Ethan tried Low in his live video and still got 13 FPS because the
+  // old setQuality only changed the spark burst count. Low now does
+  // three real things (live, no restart):
+  //   (a) render scale 0.75 (pixelRatio) — ~44% fewer fragments;
+  //   (b) spark burst count x0.5;
+  //   (c) 6 of the 11 real Spot lights off (the fill/ambient + the 5
+  //       functional spots stay) — the forward shader cost scales with
+  //       the light count on the HD 4400.
+  // Antialias is a BOOT-time setting (WebGL cannot change it at
+  // runtime): init() creates the renderer with antialias:false when
+  // the saved quality is Low. A mid-session switch to Low applies
+  // (a)-(c) immediately and AA on the next launch (the settings note
+  // says so).
+  if (!renderer) return;
+  const pr = quality === 'low' ? 0.75 : quality === 'high' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+  renderer.setPixelRatio(pr);
+  resize();
+  const keepOnLow = new Set(['Fire / primary warm light', 'Work lamp pool', 'Eye light', 'Breath light', 'Quota ready / bell glint']);
+  for (const [name, light] of Object.entries(spotLights)) {
+    light.visible = quality === 'low' ? keepOnLow.has(name) : true;
+  }
+}
+
+// F-2 — spark burst multiplier by quality (R-13 remainder: the base
+// per-strike burst count is still TODO-RE; the multiplier is ours).
+function burstMultiplier() {
+  return quality === 'low' ? 0.5 : 1;
 }
 
 function setFloorSwords(n) {
@@ -1933,7 +2436,7 @@ function setFloorSwords(n) {
   floorSwordCap = clamp(n == null ? 30 : n, 0, 30);
   while (brokenSwords.length > floorSwordCap) {
     const old = brokenSwords.shift();
-    scene.remove(old);
+    scene.remove(old.group);
   }
 }
 
@@ -1949,6 +2452,83 @@ function setView(yawDeg, pitchDeg) {
   viewPitch = (pitchDeg * Math.PI) / 180;
 }
 
+// F-1 — WASD/arrow state (from app.js keydown/keyup). The keys are
+// w/a/s/d/up/down/left/right booleans; the scene moves the camera
+// from them each frame (applyCamera).
+function setMoveKeys(keys) {
+  moveKeys = keys || {};
+}
+
+// F-1 — "Di chuyển tự do" (free: walk + drag) vs "Góc nhìn cố định"
+// (hub: fixed work view + drag only — the original's own two options,
+// verified in video 2 frame f_008). lockOn = the "Khóa mục tiêu"
+// switch: the camera stays on the anvil.
+function setControlsMode(mode, lock) {
+  controlsMode = mode === 'hub' ? 'hub' : 'free';
+  lockOn = !!lock;
+  if (controlsMode === 'hub' || lockOn) {
+    returnToWork = false;
+    if (returnToWorkResolve) { const r = returnToWorkResolve; returnToWorkResolve = null; r(); }
+    if (camPos) camPos.set(data.camera.eye[0], data.camera.eye[1], data.camera.eye[2]);
+    viewYaw = workYaw;
+    viewPitch = workPitch;
+    workBlendTarget = 1;
+  }
+}
+
+// F-1 / strike return — glide the camera back to the work eye before a
+// strike (AdoptViewPose). Resolves when the eye is within 0.1 m
+// (workStandReach) or after the 0.75 s timeout (workArriveTimeout) —
+// the strike never waits longer than that. Resolves immediately when
+// already at the work eye, when walking is locked (hub/lock_on), or
+// when the camera is not ready.
+function requestWorkView() {
+  return new Promise((resolve) => {
+    if (!camPos || controlsMode === 'hub' || lockOn) { resolve(); return; }
+    const target = new THREE.Vector3(data.camera.eye[0], data.camera.eye[1], data.camera.eye[2]);
+    if (camPos.distanceTo(target) <= 0.1) { resolve(); return; }
+    returnToWork = true;
+    returnToWorkResolve = resolve;
+    setTimeout(() => {
+      if (returnToWorkResolve) { returnToWork = false; const r = returnToWorkResolve; returnToWorkResolve = null; r(); }
+    }, 750);
+  });
+}
+
+// F-10 — the title-screen pose (TODO-RE: the title pose itself is NOT
+// in the extraction — StartScreen.RememberView saves the PRE-title pose,
+// and RevealStartScreen sets the title pose in code. This pose was
+// chosen to match the title frames (v2all/f_003, f_006): the camera on
+// the -X side looking toward the anvil/calendar area, the title plaque
+// drawn as a screen-space DOM overlay on top). Verify by screenshot vs
+// f_003 and adjust.
+function setTitleView() {
+  if (!camPos) return;
+  camPos.set(-2.2, 1.75, 0.2);
+  const look = dirToYawPitch([-1.0 - -2.2, 1.5 - 1.75, 2.4 - 0.2]);
+  viewYaw = look.yaw;
+  viewPitch = look.pitch;
+  workBlendTarget = 0;
+  returnToWork = false;
+}
+
+// Return to the work eye (used when leaving the title screen).
+function setWorkView() {
+  if (!camPos) return;
+  camPos.set(data.camera.eye[0], data.camera.eye[1], data.camera.eye[2]);
+  viewYaw = workYaw;
+  viewPitch = workPitch;
+  workBlendTarget = 1;
+  returnToWork = false;
+}
+
+// Debug: move the camera eye directly (test harness only — used for the
+// O6 ledger close-up; the game itself never teleports the camera).
+function setCamPos(x, y, z) {
+  if (!camPos) return;
+  camPos.set(x, y, z);
+}
+
 // Debug probe for the test harness / verifier (not game UI).
 function getDebug() {
   return {
@@ -1958,6 +2538,15 @@ function getDebug() {
     camYawDeg: (camera.rotation.y * 180) / Math.PI,
     camPitchDeg: (camera.rotation.x * 180) / Math.PI,
     ready: readyFlag,
+    // F-1/F-3 — movement + brightness probes for the headless test.
+    camPos: camPos ? [camPos.x, camPos.y, camPos.z].map((v) => +v.toFixed(3)) : null,
+    camFov: camera ? +camera.fov.toFixed(2) : null,
+    workBlend: +workBlend.toFixed(3),
+    exposure: renderer ? +renderer.toneMappingExposure.toFixed(3) : null,
+    held: heldGroup != null,
+    heldLight: heldLight ? +heldLight.intensity.toFixed(1) : null,
+    controlsMode,
+    lockOn,
   };
 }
 
@@ -1970,6 +2559,19 @@ function setFill(hemiI, ambI) {
   if (fillLights.amb) fillLights.amb.intensity = ambI;
 }
 
+// F-3a — brightness (20-200%, the original's range; default 70%).
+// The old implementation was a BLACK OVERLAY div (opacity =
+// ((100-b)/100)*0.7) — it could only darken, never brighten, and the
+// slider capped at 100 while Ethan plays at 200%. Brightness is now the
+// render exposure: 70% (the original's default) = the tuned 1.15, and
+// it scales linearly (200% -> 3.29, 20% -> 0.33, clamped [0.2, 3.5]).
+// The black overlay div is DELETED (index.html / styles.css / app.js).
+function setBrightness(b) {
+  if (!renderer) return;
+  const v = clamp(b == null ? 70 : b, 20, 200);
+  renderer.toneMappingExposure = clamp(1.15 * (v / 70), 0.2, 3.5);
+}
+
 // Scene stats for the test harness / verifier: mesh counts, draw calls,
 // triangles rendered last frame, and the static merged meshes' bounding
 // boxes (to prove the room geometry is really in the scene and where).
@@ -1978,6 +2580,14 @@ function getStats() {
     children: scene.children.length,
     calls: renderer.info.render.calls,
     triangles: renderer.info.render.triangles,
+    // F-2 — the Low-quality proxy: render scale + how many of the 11
+    // real Spot lights are on (Low disables 6 of them). The draw-call
+    // count does NOT change when lights are disabled (the meshes still
+    // draw) — the cost saving is in the per-draw shader work, so the
+    // pixelRatio + lightsOn are the honest proxies, not the call count.
+    pixelRatio: renderer.getPixelRatio(),
+    lightsOn: Object.values(spotLights).filter((l) => l.visible).length,
+    lightsTotal: Object.keys(spotLights).length,
     staticMeshes: [],
     boards: [],
   };
@@ -2045,7 +2655,9 @@ function animate() {
   burstsTick(dt);
   flamesTick(dt);
   feverRadianceTick();
+  tributeRingTick(dt);
   applyCamera(dt);
+  heldLightTick();
   renderer.render(scene, camera);
 }
 
@@ -2063,10 +2675,17 @@ function resize() {
   particlePxScale = size.y * 0.5;
 }
 
-async function init(el) {
+async function init(el, opts) {
   containerEl = el;
-  renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  // F-2 — antialias + render scale are decided at BOOT from the saved
+  // quality (WebGL antialias cannot change at runtime): Low = no MSAA
+  // + 0.75 render scale; Medium = 1.0; High = min(dpr, 2). setQuality()
+  // applies the live parts (pixelRatio + lights + bursts) on change.
+  const q0 = (opts && opts.quality) || 'medium';
+  quality = q0;
+  const bootPR = q0 === 'low' ? 0.75 : q0 === 'high' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+  renderer = new THREE.WebGLRenderer({ antialias: q0 !== 'low', powerPreference: 'high-performance' });
+  renderer.setPixelRatio(bootPR);
   renderer.setSize(1280, 720, false);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.15;
@@ -2094,18 +2713,56 @@ async function init(el) {
   // lookAt-derived −14° is dropped. The YAW still comes from the work
   // lookAt direction (the camera faces the anvil's striking face
   // [−1.07, 1.125, 2.19]); only the lookAt's Y component is discarded.
-  // The spawn view (facing the service window, FOV 69) is reachable via
-  // free-look drag; the exact spawn↔work blend is TODO-RE (no walking in
-  // P0 — workBlend stays 1, FOV stays at the work value 61).
+  // SIGN (fixed 2026-11-22, fix round): Three.js YXZ rotation.x is
+  // POSITIVE when looking UP (dirToYawPitch: pitch = asin(ny), and the
+  // work lookAt sits BELOW the eye, ny < 0 -> pitch < 0). The original's
+  // workLookPitch 10° is 10° BELOW horizontal — the anvil is below eye
+  // level and video 2 f_025–f_033 shows it CENTRED. The R-24 code wrote
+  // +10° (looking UP): the work view showed the ceiling + lamp with the
+  // board at the bottom edge and the anvil out of frame (fix-round
+  // screenshots 01-workview / 04-after-strikes). -10° puts the anvil
+  // (-14° from the eye) 4° below centre, matching the video.
   const wv = dirToYawPitch([
     data.workView.lookAt[0] - data.workView.eye[0],
     data.workView.lookAt[1] - data.workView.eye[1],
     data.workView.lookAt[2] - data.workView.eye[2],
   ]);
   workYaw = wv.yaw;
-  workPitch = THREE.MathUtils.degToRad(10.0); // R-24: workLookPitch
+  workPitch = THREE.MathUtils.degToRad(-10.0); // R-24: workLookPitch, DOWN
   viewYaw = workYaw;
   viewPitch = workPitch;
+  // F-1 — the walk position starts at the work eye. The camera is added
+  // to the scene so camera-attached children (the held sword, E pickup)
+  // render.
+  camPos = new THREE.Vector3(data.camera.eye[0], data.camera.eye[1], data.camera.eye[2]);
+  scene.add(camera);
+  // M3 (AEGIS round 5, 2026-11-22) — view-model fill light for the held
+  // sword. The held blade's face gets NO light from the room: it points
+  // up-right, away from workGlow/fireGlow, and the PMREM env is the dark
+  // room itself — AEGIS measured the face at 5-9/255 even after the
+  // metalness 0.75 -> 0.5 fix, while the anvil sword (lit by workGlow)
+  // reads fine (p90 224). The original's held sword IS readable (video 2
+  // f_035). First-person games light the view-model with its own fill;
+  // this is that, as an R-08 rendering approximation (not original data).
+  // A PointLight on the camera, just in front of and above the held
+  // sword (camera space [0.2, 0.1, -0.3]), intensity 3, distance 2.5,
+  // decay 2 — it only lights the held sword + a little of the near
+  // field (the anvil, 2.5 m away, gets ~0.5), and it is OFF whenever the
+  // hands are empty (setHeldSword / clearHeldSword), so the room's look
+  // is unchanged when not holding a sword. TODO-RE / R-08.
+  // NOTE (2026-11-22, round 5): the first version was a SpotLight aimed
+  // at the blade's midpoint — it did NOT light the blade at all
+  // (heldlight-diag: cranking it 12 -> 200 changed nothing, pixel for
+  // pixel). A camera-child PointLight was tried next and also failed to
+  // reach the blade. The light is therefore a child of the SCENE (like
+  // every other working light) and heldLightTick() moves it each frame
+  // to track the held sword — if a future change re-parents it to the
+  // camera, verify it with heldlight-diag.js first.
+  heldLight = new THREE.PointLight(0xfff2e0, 0, 2.5, 2);
+  heldLight.position.set(0, 0, 0);
+  scene.add(heldLight);
+  // heldLightTick() (below, called from animate) moves it every frame
+  // to sit 0.3 m off the held blade's midpoint, toward the camera.
 
   // Preload the textures the materials + particles need.
   const needed = new Set();
@@ -2118,9 +2775,6 @@ async function init(el) {
   needed.add('cfxr_ember_blur.png');
   needed.add('SoftFlame.png');
   needed.add('SoftParticle.png'); // R-10/R-12: flame + Lazy soot texture
-  // SwordV2DetailAtlas (pid 1697) — the detail atlas for the catalogue
-  // swords' teal emissive (R-09, partial; see buildCatalogueSword).
-  needed.add('SwordV2DetailAtlas.png');
   await Promise.all([...needed].map((png) => loadTexture(png, { srgb: png !== 'cfxr_electric_spark.png' && png !== 'cfxr_ember_blur.png' })));
 
   await buildStaticMeshes();
@@ -2139,6 +2793,29 @@ async function init(el) {
   buildFlames();
   buildEmbers();
   buildDust();
+
+  // R-08 (fix round 2026-11-22) — environment reflections for metals.
+  // The original's metals (sword blades, anvil, hammer, grate) reflect
+  // the room (Unity reflection probes / baked env). Without ANY
+  // environment map, Three.js MeshStandardMaterial with metalness 0.75
+  // renders nearly BLACK: a metal reflects the env, and with no env the
+  // specular term is black while the diffuse is scaled by
+  // (1 - metalness) = 0.25 — so the held/anvil sword blades read as
+  // black silhouettes (fix-round screenshots 03-held, 01-workview),
+  // even though their palette colours are steel grey / brown. The env
+  // is a PMREM of the room ITSELF (the actual warm furnace, dark walls
+  // and bright boards — not an invented studio HDR), so the swords
+  // reflect their real surroundings. environmentIntensity 0.5 keeps it
+  // from blowing out the room; the PMREM is generated once at boot
+  // (6 cube renders of the 88k-vert room, ~100 ms). TODO-RE: the
+  // original's probe positions/levels are unrecovered — this is the
+  // R-08 lighting approximation, not original data.
+  try {
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    scene.environment = pmrem.fromScene(scene, 0.04).texture;
+    scene.environmentIntensity = 0.5;
+    pmrem.dispose();
+  } catch (e) { console.warn('PMREM env failed — metals stay dark', e); }
 
   window.addEventListener('resize', resize);
   resize();
@@ -2162,7 +2839,30 @@ window.ForgeScene = {
   getDebug,
   getStats,
   setFill,
+  setBrightness,
   resize,
+  // F-1 — movement + work-view return + title pose.
+  setMoveKeys,
+  setControlsMode,
+  requestWorkView,
+  setTitleView,
+  setWorkView,
+  setCamPos,
+  // F-1/E — pickup + held sword. F-9a — tribute ring. F-8 — Fever amount.
+  tryPickup,
+  tryPlaceOrDeposit,
+  setHeldSword,
+  clearHeldSword,
+  tributeRing,
+  getFeverAmount,
   get ready() { return readyFlag; },
   get webgl() { return webglFlag; },
+  // Debug handle (not game UI): lets the test harness / AEGIS traverse
+  // the scene graph to isolate a light, particle system or mesh
+  // (used 2026-11-22 to diagnose the furnace white blowout).
+  get scene() { return scene; },
+  // Debug handle: the THREE namespace, so the harness can build
+  // Vector3/Matrix3 values in evalJs (THREE is module-scoped, not a
+  // global, so evalJs cannot reference it directly).
+  get THREE() { return THREE; },
 };

@@ -60,6 +60,24 @@ const I18N = {
   "settings.off": { vi: "Tắt", en: "Off" },
   "menu.language": { vi: "NGÔN NGỮ", en: "LANGUAGE" },
   "menu2.settings": { vi: "Cài đặt", en: "Settings" }, // EN: clone
+  // F-10/F-5/F-6 — title + pause menu + ledger grid strings, all
+  // verified in vi.txt 2026-11-21 (the title board's 50/49/1 is NOT a
+  // vi.txt value — it is rendered verbatim from video 2 f_003/f_006).
+  "menu2.title": { vi: "Menu", en: "Menu" }, // the pause panel's own title (video 2 f_008)
+  "menu2.startGame": { vi: "Bắt đầu game", en: "Start game" },
+  "menu2.resume": { vi: "Tiếp tục", en: "Resume" },
+  "menu2.restart": { vi: "Chơi lại từ đầu", en: "Restart from the beginning" },
+  "menu2.returnTitle": { vi: "Về màn hình chính", en: "Back to title" },
+  "menu2.codex": { vi: "Sổ sưu tập", en: "Codex" },
+  "start.exit": { vi: "THOÁT", en: "EXIT" },
+  "ui.bb3ad48c0b": { vi: "GIỮ NGUYÊN", en: "HOLD" }, // EN: clone
+  "ui.826f8ad351": { vi: "Chạm để tiếp tục", en: "Tap to continue" }, // EN: clone
+  "touch.take_sword": { vi: "Lấy kiếm", en: "Take sword" }, // EN: clone
+  "touch.leave_on_anvil": { vi: "Để lên đe", en: "Place on anvil" }, // EN: clone
+  "template.ticket_total": { vi: "TỔNG {count}", en: "TOTAL {count}" },
+  "ui.8becf7224b": { vi: "TRỌNG SỐ GÃY x", en: "BREAK WEIGHT x" }, // EN: clone
+  "ui.ticket_note": { vi: "NGUY CƠ NÂNG CẤP HIỂN THỊ TẠI ĐE", en: "UPGRADE RISK SHOWN AT THE ANVIL" }, // EN: clone
+  "ui.ea06c739f7": { vi: "HƯ HẠI", en: "DAMAGE" }, // the original's own board label (video 2 f_027)
   "menu2.language": { vi: "Ngôn ngữ", en: "Language" }, // EN: clone
   "menu2.languageHint": { vi: "Thay đổi ngôn ngữ có hiệu lực ngay và được ghi nhớ.", en: "Changing the language takes effect immediately and is remembered." }, // EN: clone
   "dev.fps": { vi: "Hiện FPS", en: "Show FPS" },
@@ -73,11 +91,11 @@ const I18N = {
   "ui.new_run": { vi: "Chơi lại", en: "New run" },
   "ui.endless_continue": { vi: "Tiếp tục (Endless)", en: "Continue (Endless)" },
   "ui.haptics_note": { vi: "Không có động cơ rung trên PC", en: "No vibration motor on PC" },
-  "ui.quality_note": { vi: "Trên giao diện 3D này, mục này chỉnh mật độ hạt lửa / chuyển động.", en: "On this 3D UI, this controls spark / animation density." },
+  "ui.quality_note": { vi: "Thấp: tắt khử răng cưa, giảm độ phân giải render, tắt 6/11 đèn, giảm một nửa tia lửa. Khử răng cưa đổi ở lần mở sau.", en: "Low: no antialiasing, lower render resolution, 6 of 11 lights off, half the sparks. Antialiasing changes on the next launch." },
   "ui.loading": { vi: "Đang tải…", en: "Loading…" },
   "ui.error": { vi: "Không tải được giao diện. Hãy khởi động lại.", en: "Could not load the interface. Please restart." },
   "ui.outcome_break": { vi: "GÃY", en: "BREAK" },
-  "ui.outcome_damage": { vi: "HỎNG", en: "DAMAGE" },
+  "ui.outcome_damage": { vi: "HƯ HẠI", en: "DAMAGE" }, // was "HỎNG" — corrected 2026-11-21: the original's own board label is "HƯ HẠI" (video 2 f_027 CCW; vi.txt ui.ea06c739f7)
   "ui.outcome_hold": { vi: "GIỮ", en: "HOLD" },
   "ui.outcome_success": { vi: "THÀNH CÔNG", en: "SUCCESS" },
   "ui.outcome_great": { vi: "ĐẠI THÀNH CÔNG", en: "GREAT" },

@@ -13,23 +13,49 @@
   <div id="error" style="display:none"></div>
 
   <div id="app" style="display:none">
-    <div id="brightness-overlay"></div>
-
     <!-- The forge room IS the UI (LAYOUT.md §9): contract/day/quota/grade/
          value/chances are 3D text on the in-room boards (instrument board,
          Forge Ledger, Meter_Plaque, Round calendar); strikes/tributes/
-         next-day are in-scene taps (anvil / bell / ledger). No DOM text
-         frames, no action buttons, no topbar gear — ESC opens settings. -->
+         next-day are in-scene taps (anvil / bell / ledger). ESC opens the
+         pause Menu (F-5: the original's own action buttons + settings).
+         F-8: the Fever teal wash is a full-screen DOM overlay driven by
+         the scene's Fever amount. F-9c: the Great result is a big
+         transient banner. F-10: the title screen is a DOM plaque over
+         the 3D room (the original's IMGUI board is screen-space too). -->
     <main id="scene">
       <div id="gl"></div>
     </main>
+
+    <div id="fever-overlay"></div>
+    <div id="great-banner"><div class="great-title"></div><div class="great-ratio"></div></div>
+
+    <div id="title-screen" style="display:none">
+      <div class="title-plaque">
+        <h1>FORGE TAXX</h1>
+        <p class="title-start" data-i18n="menu2.startGame">Bắt đầu game</p>
+        <div class="title-divider"></div>
+        <div class="title-cols">
+          <div class="title-col exit"><span data-i18n="start.exit">THOÁT</span><b>1%</b></div>
+          <div class="title-col hold"><span data-i18n="ui.bb3ad48c0b">GIỮ NGUYÊN</span><b>49%</b></div>
+          <div class="title-col start"><span data-i18n="menu2.startGame">Bắt đầu game</span><b>50%</b></div>
+        </div>
+        <p class="title-prompt" data-i18n="ui.826f8ad351">Chạm để tiếp tục</p>
+      </div>
+    </div>
 
     <div id="toast"></div>
     <div id="fps-counter">-- FPS</div>
 
     <div id="settings-panel" style="display:none">
       <div class="settings-card">
-        <h2 data-i18n="ui.settings_title">Cài đặt</h2>
+        <h2 data-i18n="menu2.title">Menu</h2>
+
+        <div class="menu-actions">
+          <button id="menu-resume" type="button" class="menu-btn gold" data-i18n="menu2.resume">Tiếp tục</button>
+          <button id="menu-codex" type="button" class="menu-btn" disabled data-i18n="menu2.codex">Sổ sưu tập</button>
+          <button id="menu-restart" type="button" class="menu-btn" data-i18n="menu2.restart">Chơi lại từ đầu</button>
+          <button id="menu-home" type="button" class="menu-btn" data-i18n="menu2.returnTitle">Về màn hình chính</button>
+        </div>
 
         <label class="set-row"><span data-i18n="settings.master">Âm lượng tổng</span>
           <input type="range" id="set-master" min="0" max="100" step="1">
@@ -48,7 +74,7 @@
           <span class="note" data-i18n="ui.haptics_note">Không có động cơ rung trên PC</span></label>
 
         <label class="set-row"><span data-i18n="settings.brightness">Độ sáng</span>
-          <input type="range" id="set-brightness" min="20" max="100" step="1">
+          <input type="range" id="set-brightness" min="20" max="200" step="1">
           <span class="set-val" id="set-brightness-val"></span></label>
 
         <label class="set-row"><span data-i18n="settings.quality">Chất lượng đồ họa</span>

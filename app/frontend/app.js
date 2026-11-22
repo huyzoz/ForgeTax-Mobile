@@ -4,10 +4,12 @@
 // renders state and forwards input. The forge room is rendered by
 // scene3d.js (Three.js, the REAL 3.17.0 scene layout + original textures);
 // ALL game state is shown as 3D text on the in-room boards (LAYOUT.md
-// §5, §9) — there are no DOM text frames, no action buttons, no topbar.
-// Interactions are in-scene taps: anvil/sword = strike, service window /
-// counter bell = tribute, ledger/calendar = next day (ForgeInteractable
-// targets, LAYOUT.md §4). ESC opens settings (the only DOM panel kept).
+// §5, §9) — there are no DOM text frames, no topbar. Interactions are
+// in-scene taps: anvil/sword = strike, service window / counter bell =
+// tribute, ledger/calendar = next day (ForgeInteractable targets,
+// LAYOUT.md §4). ESC opens the pause Menu (the original's own action
+// buttons + settings, F-5). The title screen (F-10) is a DOM overlay
+// over the 3D room, like the original's screen-space IMGUI board.
 // Backend bridge:
 //   - In the Tauri app: window.__TAURI__.core.invoke(cmd, args).
 //   - In dev/test mode (plain http server): POST /api/<cmd> with JSON.
@@ -106,6 +108,16 @@ let viewOffset = { x: 0, y: 0 };
 let lastOutcome = null;
 let lastOutcomeLabel = null;
 let consecCount = 0;
+// F-1/E — the held sword (E pickup, OWNER 2026-11-21 23:47): null when
+// the hands are empty, else {kind: 'anvil'|'floor'|'counter',
+// appearanceId, floorIndex?, counterIndex?}. The scene owns the held
+// visual (camera-attached sword); this file owns the state machine.
+let heldSword = null;
+// F-1 — WASD/arrow state (held keys, sent to the scene each change).
+let moveKeys = { w: false, a: false, s: false, d: false, up: false, down: false, left: false, right: false };
+// F-10 — the title screen is showing (the run is paused behind it).
+let titleShowing = false;
+let greatBannerTimer = null;
 // R-17: appearance uses the HIGHEST grade reached (ForgeSwordAppearance
 // SyncAppearance: grade = max(highestVisualGrade, grade) — the form does
 // NOT step back down after a Damage). Tracked per sword, keyed by
@@ -121,8 +133,9 @@ const els = {};
 
 function collectEls() {
   ["loading", "error", "app", "scene", "gl", "toast", "fps-counter",
-   "brightness-overlay", "settings-panel", "overlay", "overlay-title",
-   "overlay-sub", "overlay-btn-endless", "overlay-btn-new"].forEach((id) => { els[id] = $(id); });
+   "settings-panel", "overlay", "overlay-title",
+   "overlay-sub", "overlay-btn-endless", "overlay-btn-new",
+   "fever-overlay", "great-banner", "title-screen"].forEach((id) => { els[id] = $(id); });
 }
 
 function showError(msg) {
@@ -188,6 +201,16 @@ function buildView() {
       max: s.fever.max ?? 8,
     },
     relics: s.relics.map((id) => RELIC_NAMES[id] || id),
+    // F-6 — the Ledger's printed probability grid: the RAW FillDeck
+    // counts (Run::deck_raw) + the seal factor (Run::seal_factor) +
+    // the original's own strings (vi.txt template.ticket_total,
+    // ui.8becf7224b, ui.ticket_note). The grid is drawn by scene3d.js
+    // from these live values.
+    deck: s.deck || [9, 2, 5, 18, 4],
+    seal: s.seal != null ? s.seal : 0.85,
+    ledgerTotal: t("template.ticket_total", { count: Math.round((s.deck || [9, 2, 5, 18, 4]).reduce((a, b) => a + b, 0)) }),
+    ledgerSeal: t("ui.8becf7224b"),
+    ledgerNote: t("ui.ticket_note"),
   };
 }
 
@@ -249,7 +272,7 @@ function recordOutcome(o) {
 }
 
 async function doStrike() {
-  if (striking || !state || state.state !== "playing") return;
+  if (striking || !state || state.state !== "playing" || titleShowing) return;
   // R-06: hammer cooldown — nextStrikeTime = now + 0.64/speed (speed 1.0
   // in P0, no speed relics). Taps inside the window are ignored (the
   // hammer is still cycling), exactly like the original's strikeReady.
@@ -263,10 +286,27 @@ async function doStrike() {
   // real gate ~895 ms, so 12 taps at 700 ms gave only 6 strikes.)
   strikeReadyAt = now + 640;
   sound.ensure();
+  // F-1/E — striking with the anvil sword PICKED UP (held): the hammer
+  // swings at an empty anvil — a whoosh, no clang, no backend call
+  // (the original's noSwordLockoutSec 3.2). Holding a floor/counter
+  // sword does NOT block striking (the anvil sword is still there).
+  if (heldSword && heldSword.kind === "anvil") {
+    if (window.ForgeScene) window.ForgeScene.strike();
+    sound.playSwing();
+    striking = false;
+    return;
+  }
+  // F-1 — the strike returns the camera to the WORK view first
+  // (AdoptViewPose: eye [0.15, 1.76, -0.05], pitch 10°, FOV 61 —
+  // behavior.json forge_first_person). The glide takes at most 0.75 s
+  // (workArriveTimeout) and resolves immediately when already there.
+  // Walking (WASD) cancels the return and leaves the work view.
+  if (window.ForgeScene) await window.ForgeScene.requestWorkView();
   // 3D hammer swing (real timing: raise 0.16s, down 0.095s, return
   // 0.10s + 0.21s — behavior.json hammer_strike, speed 1.0).
   if (window.ForgeScene) window.ForgeScene.strike();
   const swingStart = performance.now();
+  const oldValue = state.sword ? state.sword.value : 0;
   try {
     const payload = await Backend.invoke("strike", {});
     if (!payload) return;
@@ -278,8 +318,15 @@ async function doStrike() {
     state = payload.state;
     const o = payload.outcome;
     recordOutcome(o);
-    if (o === "great") sound.playGreat();
-    else if (o === "break") {
+    if (o === "great") {
+      sound.playGreat();
+      // F-9c — the Great result is BIG text across the screen (video 2
+      // frame f_030: "ĐẠI THÀNH CÔNG / 3.5x"). The ratio is the real
+      // value gain (new value / old value, from the strike payload).
+      const newValue = state.sword ? state.sword.value : 0;
+      const ratio = oldValue > 0 && newValue > oldValue ? newValue / oldValue : null;
+      showGreatBanner(ratio);
+    } else if (o === "break") {
       sound.playBreak();
       if (window.ForgeScene) window.ForgeScene.addBrokenSword();
       if (payload.scrap > 0) toast(t("ui.scrap", [fmtGold(payload.scrap)]));
@@ -295,6 +342,23 @@ async function doStrike() {
   }
 }
 
+// F-9c — the big Great banner (a transient DOM overlay, same class as
+// the allowed transient toasts — NOT a HUD frame). Shown ~1.6 s on a
+// Great: "ĐẠI THÀNH CÔNG" + the real value ratio (3.5x). The
+// presentation is REMADE; the ratio is real state data.
+function showGreatBanner(ratio) {
+  const b = els["great-banner"];
+  if (!b) return;
+  b.querySelector(".great-title").textContent = t("ui.outcome_great");
+  // M1 (AEGIS 2026-11-22): the original's big text reads "3.5x" (video 2
+  // f_030) — a trailing "x" only, NO leading "×". The first version wrote
+  // "×3.5x" (an extra ×). Fixed here + in great-banner-test.js.
+  b.querySelector(".great-ratio").textContent = ratio ? ratio.toFixed(1) + "x" : "";
+  b.classList.add("show");
+  if (greatBannerTimer) clearTimeout(greatBannerTimer);
+  greatBannerTimer = setTimeout(() => b.classList.remove("show"), 1600);
+}
+
 async function doTribute() {
   if (!state || state.state !== "playing") return;
   sound.ensure();
@@ -302,14 +366,60 @@ async function doTribute() {
     const payload = await Backend.invoke("tribute_sword", {});
     if (!payload) return;
     state = payload.state;
+    // F-4: the bell (3407_TributeBell) + the SwordFeed (3411) are both
+    // inside playTribute now. There is NO coin cue in the original
+    // (EFFECTS.md §5, ForgeAudio.Cue) — the old playCoin() call is
+    // DELETED.
     sound.playTribute();
-    sound.playCoin();
+    // F-9a — the golden ring flash hugging the offered sword (REMADE
+    // effect, video 2 tribute frames). The ring sits at the anvil
+    // sword (the bell-click tribute offers the sword on the anvil).
+    if (window.ForgeScene) window.ForgeScene.tributeRing();
     if (payload.settle === "cleared") toast(t("ui.round_cleared", [state.round]));
     else if (payload.settle === "anger") toast(t("ui.round_anger", [state.anger]));
     render();
   } catch (e) {
     showError(String(e));
   }
+}
+
+// F-1/E — "Lấy kiếm" (touch.take_sword, OWNER 2026-11-21 23:47): press E
+// near a sword to pick it up (the held sword shows in hand, attached
+// to the camera), press E again near its origin to put it back. E near
+// the bell/window while holding the CURRENT sword offers it as tribute
+// (DepositHeldSword). Placing a counter sword on the anvil is
+// disallowed (it would desync the core's current-sword state — P1
+// follow-up). The click (1755 Hz, 3404_SwordSet) plays on pickup/place.
+async function doPickup() {
+  if (!state || state.state !== "playing" || titleShowing) return;
+  if (els["settings-panel"] && els["settings-panel"].style.display === "flex") return;
+  if (!window.ForgeScene) return;
+  sound.ensure();
+  if (!heldSword) {
+    const picked = window.ForgeScene.tryPickup();
+    if (!picked) return;
+    heldSword = picked;
+    await window.ForgeScene.setHeldSword(picked.appearanceId);
+    sound.playSet();
+    return;
+  }
+  const res = window.ForgeScene.tryPlaceOrDeposit(heldSword);
+  if (!res) return;
+  if (res.action === "deposit") {
+    // The held sword leaves the hand; the tribute offers it.
+    window.ForgeScene.clearHeldSword();
+    heldSword = null;
+    sound.playSet();
+    await doTribute();
+    // The ring hugs the offered sword at the bell (not the anvil).
+    if (window.ForgeScene) window.ForgeScene.tributeRing(1.654, 1.17, -1.609);
+    return;
+  }
+  // place-anvil / putback-floor / putback-counter: the scene already
+  // restored the sword; just drop the held visual.
+  window.ForgeScene.clearHeldSword();
+  heldSword = null;
+  sound.playSet();
 }
 
 async function doEndDay() {
@@ -327,6 +437,9 @@ async function doEndDay() {
 
 async function doNewRun() {
   try {
+    // A new run resets the anvil sword — drop anything held.
+    if (window.ForgeScene) window.ForgeScene.clearHeldSword();
+    heldSword = null;
     state = await Backend.invoke("new_run", {});
     lastOutcome = null;
     lastOutcomeLabel = null;
@@ -385,18 +498,19 @@ function applySettings() {
     }
     el.textContent = t(el.dataset.i18n);
   });
-  // Brightness overlay: 100% = no overlay.
-  els["brightness-overlay"].style.opacity = String(((100 - settings.brightness) / 100) * 0.7);
+  // F-3a — brightness (20-200%, the original's range) is the RENDER
+  // EXPOSURE (toneMappingExposure = 1.15 * (b/70)), not a black overlay.
+  // The old brightness-overlay div is DELETED: it could only darken.
+  if (window.ForgeScene) window.ForgeScene.setBrightness(settings.brightness);
   // FPS counter.
   els["fps-counter"].style.display = settings.show_fps ? "block" : "none";
   // Broken swords on the floor (cap) + particle budget follow the setting.
   if (window.ForgeScene) window.ForgeScene.setFloorSwords(settings.floor_swords);
   if (window.ForgeScene) window.ForgeScene.setQuality(qualityLevel());
-  // View mode: hub / lock-on = fixed work view; free = drag to look.
-  if (settings.controls === "hub" || settings.lock_on) {
-    viewOffset = { x: 0, y: 0 };
-    if (window.ForgeScene) window.ForgeScene.setViewOffset(0, 0);
-  }
+  // F-1 — view mode: "Di chuyển tự do" (free: walk + drag) vs "Góc nhìn
+  // cố định" (hub: fixed work view + drag only), + the "Khóa mục tiêu"
+  // switch (locks the camera on the anvil). The scene owns the lock.
+  if (window.ForgeScene) window.ForgeScene.setControlsMode(settings.controls, settings.lock_on);
   // Volumes.
   sound.setVolumes(settings.master, settings.music, settings.sfx);
   // Settings panel controls.
@@ -489,6 +603,70 @@ function toggleSettings(open) {
 }
 
 // ---------------------------------------------------------------------------
+// Title screen (F-10, approved by OWNER 2026-11-21 23:47)
+// ---------------------------------------------------------------------------
+// The original boots into a screen-space IMGUI title board ("FORGE
+// TAXX / Bắt đầu game", video 2 frames f_003/f_006) inside the 3D room
+// and only starts the run when the player taps "Bắt đầu game" (or the
+// "Chạm để tiếp tục" prompt). The board's percentages are DISPLAY ONLY:
+// PressStartScreen performs NO roll and consumes NO chances
+// (ForgeChances StartScreenChances = [0, 0, 500, 500, 0] — destruction
+// 0 / damage 0 / hold 500 / success 500 / great 0 — while the board
+// renders THOÁT 1% / GIỮ NGUYÊN 49% / Bắt đầu game 50%; the exact
+// display mapping is TODO-RE, CIPHER follow-up). The board is rendered
+// EXACTLY as observed on video (50/49/1). The title camera pose is also
+// TODO-RE (matched to f_003 by eye). The title is a DOM overlay over
+// the 3D room (the original's IMGUI is screen-space too).
+function showTitle() {
+  titleShowing = true;
+  if (window.ForgeScene) window.ForgeScene.setTitleView();
+  if (els["title-screen"]) els["title-screen"].style.display = "flex";
+}
+
+function hideTitle() {
+  titleShowing = false;
+  if (els["title-screen"]) els["title-screen"].style.display = "none";
+  if (window.ForgeScene) window.ForgeScene.setWorkView();
+}
+
+// "Bắt đầu game" (or the tap prompt): enter the game. If a run is
+// already active (e.g. returning from the pause menu's "Về màn hình
+// chính"), resume it; otherwise start a new run. Whether the original
+// resumes an existing run or always starts new is TODO-RE (flagged).
+async function startFromTitle() {
+  if (!titleShowing) return;
+  hideTitle();
+  if (!state || state.state !== "playing") {
+    await doNewRun();
+  } else {
+    render();
+  }
+}
+
+function bindTitleScreen() {
+  const el = els["title-screen"];
+  if (!el) return;
+  el.addEventListener("click", () => { startFromTitle(); });
+}
+
+function bindMenuButtons() {
+  const q = (id) => document.getElementById(id);
+  // F-5 — the pause Menu's action buttons (the original's own, video 2
+  // frame f_008; the strings are vi.txt menu2.*). "Sổ sưu tập" (codex)
+  // is P1 — shown DISABLED. "Gỡ quảng cáo" has no vi.txt key and no
+  // ads exist in this build — not shown (noted in the handoff).
+  q("menu-resume").addEventListener("click", () => toggleSettings(false));
+  q("menu-restart").addEventListener("click", async () => {
+    toggleSettings(false);
+    await doNewRun();
+  });
+  q("menu-home").addEventListener("click", () => {
+    toggleSettings(false);
+    showTitle();
+  });
+}
+
+// ---------------------------------------------------------------------------
 // FPS counter + Fever tick loop
 // ---------------------------------------------------------------------------
 let frames = 0;
@@ -503,6 +681,18 @@ function loop(now) {
     }
     frames = 0;
     fpsWindowStart = now;
+  }
+  // F-8 — the Fever full-screen teal wash (video 2 frames f_027/f_033):
+  // STEADY while Fever is active (opacity 0.45 — TODO-RE, no tint value
+  // in behavior.json fever). The first version followed the scene's
+  // FeverAmount (the hash-gated envelope), which FLICKERS 0 <-> ~1
+  // during the 0-2.8 s ramp — AEGIS 2026-11-22 proved it (Fever active
+  // but the overlay read 0 and the screenshot had no wash), while f_027
+  // and f_033 (~30 s apart) both show a steady teal wash. The envelope
+  // still drives the radiance light + shake (getFeverAmount); only the
+  // DOM wash is steady now. 0 when Fever is off.
+  if (els["fever-overlay"]) {
+    els["fever-overlay"].style.opacity = (state && state.fever && state.fever.active) ? "0.45" : "0";
   }
   // Fever tick: accumulate real time, send to the backend every 200ms.
   if (state && state.fever && state.fever.active) {
@@ -572,17 +762,48 @@ async function boot() {
   collectEls();
   bindSettingsPanel();
   bindDrag();
+  bindTitleScreen();
+  bindMenuButtons();
   els["overlay-btn-new"].addEventListener("click", doNewRun);
   els["overlay-btn-endless"].addEventListener("click", doEndless);
   // R-22 — REMADE (approved by OWNER 2026-11-21): the PC keys /
-  // interactions (Escape = settings, Space = strike, drag = free-look,
-  // click/tap = strike) are a REMADE control scheme — the original is a
-  // mobile touch game (no keyboard, no mouse); the PC bindings are ours.
+  // interactions are a REMADE control scheme — the original is a mobile
+  // touch game (no keyboard, no mouse); the PC bindings are ours.
+  //   WASD/arrows = walk (F-1, ForgeFirstPerson 2.09 m/s)
+  //   E = pick up / put down a sword ("Lấy kiếm", OWNER 2026-11-21)
+  //   Space (hold) = strike (the browser auto-repeats keydown while
+  //   held; the 640 ms hammer cooldown gates it)
+  //   Left mouse = strike when clicking the anvil/sword
+  //   Drag = free-look, Escape = pause Menu
+  const KEY_TO_MOVE = {
+    KeyW: "w", ArrowUp: "up", KeyS: "s", ArrowDown: "down",
+    KeyA: "a", ArrowLeft: "left", KeyD: "d", ArrowRight: "right",
+  };
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") toggleSettings();
-    if (e.key === " " && els["settings-panel"].style.display !== "flex") {
+    if (e.key === "Escape") { toggleSettings(); return; }
+    const panelOpen = els["settings-panel"] && els["settings-panel"].style.display === "flex";
+    if (titleShowing) return;
+    if (panelOpen) return;
+    const mv = KEY_TO_MOVE[e.code];
+    if (mv) {
+      e.preventDefault();
+      if (!moveKeys[mv]) {
+        moveKeys[mv] = true;
+        if (window.ForgeScene) window.ForgeScene.setMoveKeys({ ...moveKeys });
+      }
+      return;
+    }
+    if (e.code === "KeyE" && !e.repeat) { doPickup(); return; }
+    if (e.key === " ") {
       e.preventDefault();
       doStrike();
+    }
+  });
+  document.addEventListener("keyup", (e) => {
+    const mv = KEY_TO_MOVE[e.code];
+    if (mv && moveKeys[mv]) {
+      moveKeys[mv] = false;
+      if (window.ForgeScene) window.ForgeScene.setMoveKeys({ ...moveKeys });
     }
   });
   document.addEventListener("pointerdown", () => sound.ensure(), { once: true });
@@ -590,7 +811,6 @@ async function boot() {
     settings = await Backend.invoke("load_settings", {});
     if (!settings || typeof settings !== "object") settings = defaultSettings();
     settings = { ...defaultSettings(), ...settings };
-    state = await Backend.invoke("new_run", {});
     // Sword names (the original's own Vietnamese names).
     try {
       SWORD_NAMES = await (await fetch("sword-names.json")).json();
@@ -600,12 +820,19 @@ async function boot() {
     }
     // 3D scene init (loads the real room + original textures). If WebGL
     // or a texture is unavailable, show a plain error — never a black window.
+    // F-2: the saved quality decides the boot-time antialias + render
+    // scale (WebGL antialias cannot change at runtime).
     if (!window.ForgeScene) throw new Error("3D module failed to load (scene3d.js / three)");
-    await window.ForgeScene.init(els.gl);
+    await window.ForgeScene.init(els.gl, { quality: qualityLevel() });
     els.loading.style.display = "none";
     els.app.style.display = "flex";
     applySettings();
+    // F-10 — boot into the TITLE screen (no run yet). The run starts
+    // when the player taps "Bắt đầu game" / the prompt (startFromTitle).
+    // The scene is rendered behind the title (the 3D room is visible
+    // around the plaque, like the original).
     render();
+    showTitle();
     requestAnimationFrame(loop);
   } catch (e) {
     showError(String(e));
