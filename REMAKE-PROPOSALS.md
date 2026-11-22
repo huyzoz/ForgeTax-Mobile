@@ -73,9 +73,9 @@ CIPHER v2 (`ForgeTax-Mobile-CIPHER-P0v2.zip`, MD5
 
 ### R-08 — Đèn fill thay thế baked lightmaps / light probes
 - **Vị trí:** `app/frontend/scene3d.js` `buildLights()` — HemisphereLight
-  `(0x8a6a4a, 0x1a120c, 4.0)`, AmbientLight `(0x241a12, 2.5)`, workGlow PointLight
-  `(1.0,0.74,0.43)/14/3.5` tại `(−1.07, 2.1, 2.19)`, fireGlow PointLight
-  `(1.0,0.59,0.27)/12/5` tại `(2.72, 1.2, 2.43)`.
+  `(0x8a6a4a, 0x1a120c, 18.0)`, AmbientLight `(0x241a12, 9.0)`, workGlow PointLight
+  `(1.0,0.74,0.43)/40/3.5` tại `(−1.07, 2.1, 2.19)`, fireGlow PointLight
+  `(1.0,0.59,0.27)/32/5` tại `(2.72, 1.2, 2.43)`.
 - **Bằng chứng:** ánh sáng nền của gốc là baked lightmaps + light probes —
   KHÔNG CÓ trong bundle (LAYOUT.md §1/§3; CIPHER đã liệt kê toàn bộ
   `data.unity3d`, không có lightmap/probe asset). 11/20 Spot light thật đã dùng;
@@ -85,6 +85,58 @@ CIPHER v2 (`ForgeTax-Mobile-CIPHER-P0v2.zip`, MD5
   Trạng thái: **ĐÃ DUYỆT — REMADE** (OWNER 2026-11-21 19:47; ghi `REMADE — approved by OWNER 2026-11-21` trong code).
 - Lưu ý (đã sửa 2026-11-21): `flamesTick` KHÔNG còn ghi đè `fireLight.intensity`
   — fireLight giữ đúng 20.0 gốc; Fever có đèn radiance riêng (xem R-15).
+- **Tăng cường độ fix round 2026-11-21 (F-3a):** 4.0/2.5/14/12 → 7.0/4.0/22/18 →
+  18.0/9.0/40/20 (fireGlow dời ra trước miệng lò [2.95, 1.35, 2.75] — ở 32 đặt
+  trong miệng lò làm cháy trắng bề mặt trong, xem 07-furnace.png lần 1). Lý do:
+  albedo gốc ~0.02–0.05 linear nên fill cũ vẫn để phòng tối đen trên video live
+  của OWNER (p1) và trên ảnh headless (vùng đe đen, lưỡi kiếm cầm tay đọc như
+  silhouette đen). Mức mới tune từ ảnh chụp so với frame video 2 — vẫn là
+  approximation (R-08), không phải dữ liệu gốc.
+- **Giảm cường độ 2026-11-22 (chẩn đoán lò trắng, `tools/dev-server/furnace-diag.js`,
+  5 biến thể):** 18.0/9.0/40/20 → **8.0/3.0/40/6**. Miệng lò VẪN cháy trắng ở
+  18/9/20 — chẩn đoán chứng minh trắng đến từ fireGlow (biến thể tắt fireGlow
+  là biến thể duy nhất hết trắng; tắt fill và tắt flames đều không hết). Nguyên
+  nhân: fireGlow chiếu vào đá "Rough exposed stone core" (albedo 0.31) quanh
+  miệng lò: 20/0.85²×0.31/π ≈ 2.8 (clip trắng); hemi 18 một mình đã cho đá đó
+  1.8. Gỗ tối (0.02) không bao giờ đọc được từ fill đều dù sao (cần 50+) — nó
+  đọc nhờ workGlow + spot cục bộ. Mức mới: đá vòm ~0.8–1.0 (sáng ấm, không clip),
+  gạch ~0.5.
+- **Giảm cường độ lần 2, 2026-11-22 (AEGIS M4):** 8.0/3.0/40/6 → **6.0/2.0/40/3**.
+  Lõi miệng lò VẪN gần trắng (AEGIS đo 211/255) — fireGlow 6 một mình cho đá
+  lõi 0.82 chồng lên hemi 0.79. Mức mới: lõi ~1.2 (sáng ấm, không trắng kem).
+  AEGIS đề nghị thêm than ember trong miệng lò — TỪ CHỐI: 19 khối clinker là
+  data layout thật, thêm than = bịa (Law 0).
+- **Env map PMREM 2026-11-22 (cùng R-08):** lưỡi kiếm (metalness 0.75) đọc như
+  silhouette ĐEN vì Three.js không có `scene.environment` — kim loại không có
+  gì để phản chiếu (diffuse chỉ còn (1−0.75)=0.25). Thêm PMREM từ chính phòng
+  (`pmrem.fromScene(scene, 0.04)`, `environmentIntensity 0.5`, sinh 1 lần lúc
+  boot) để kiếm/đe/búa/ghi phản chiếu phòng thật. Probe gốc không khôi phục
+  được — đây là approximation R-08, không phải dữ liệu gốc.
+- **Metalness kiếm 2026-11-22 (AEGIS M3):** PMREM KHÔNG đủ — lưỡi VẪN đen ở 70%
+  (AEGIS đo 0–16/255; lần 3 của SENSOR 1.6–22.7) vì env là chính căn phòng tối
+  nên kim loại không có gì sáng để phản chiếu. SwordV2 gốc là shader TÙY BIẾN,
+  không phải PBR metal chuẩn — nên metalness 0.75 → **0.5** (diffuse mang màu
+  palette) + envMapIntensity **2.0** cho material kiếm (catalogue + blade của
+  base Blade), approximation TODO-RE/R-08, không phải dữ liệu shader gốc.
+- **View-model fill light + neutral emissive 2026-11-22 (AEGIS M3, vòng 5–6):**
+  lưỡi cầm tay VẪN đen sau metalness 0.5 (AEGIS vòng 5: median 6.0, p90 6.9)
+  vì không có đèn nào tới được mặt lưỡi. Điều tra bằng `heldlight-diag.js`:
+  SpotLight gắn camera (12→200 không đổi pixel), PointLight gắn camera, rồi
+  PointLight con của SCENE + `heldLightTick()` bám theo camera (đèn đã đúng vị
+  trí, gần kiếm) — tất cả đều KHÔNG sáng được lưỡi, kể cả intensity 300 /
+  distance 0 / decay 0 (cả khu đe trắng xóa, lưỡi vẫn 6/255); metalness 0 cũng
+  không cứu; pháp tuyến world mặt lưỡi hướng về đèn (dot 0.955);
+  MeshBasicMaterial trắng chứng minh geometry render tốt. Kết luận: mặt phẳng
+  lưỡi nhận ~0 diffuse từ mọi nguồn, lý do shader-level chưa hiểu được.
+  **Fix:** (1) heldLight PointLight con của SCENE (intensity 3, distance 2.5,
+  decay 2), vị trí cập nhật mỗi frame bởi `heldLightTick()` (0.35m trước
+  camera, hơi cao hơn đường kiếm) — giữ làm fill phụ; (2) emissive TRUNG TÍNH
+  bằng đúng màu palette của kiếm (clone từ `material.color`), intensity 0.5,
+  CHỈ cho kiếm cầm tay (trong `setHeldSword`, clone material): đo đường chéo
+  lưỡi median **122.9** (từ 6.9), thép nâu-tan ấm đọc rõ. Đây KHÔNG phải
+  emissive teal R-09 (atlas sai + màu teal, đã rút ở F-3b) — không emissiveMap,
+  không đổi hue, chỉ kiếm cầm tay. TODO-RE/R-08: approximation readability
+  cho view-model (CIPHER v2: SwordV2 emission ≈ 0), không phải dữ liệu gốc.
 
 ### R-16 — Hướng đặt kiếm trên đe (spawn orientation)
 - **Vị trí:** `app/frontend/scene3d.js` `swordBasisQuat()` — prefab +Y → world +X,
@@ -232,12 +284,23 @@ trong build đều có marker TODO-RE, không trình bày như số thật.**
 - **Tình trạng nguồn:** đường cong FeverCameraPower/Age TODO-RE (LAYOUT.md §5e/
   §10.5). CIPHER v2 đang thử. Trạng thái: **ĐÃ SỬA THEO SỐ THẬT V2** (2026-11-21): feverShake {x 0.013, z 1.15 (ROTATION deg), rot 0.38, fovAmp 1.4, freqs [93,117,32,81,67,23]}, power = envelope(age)×1.3, FOV offset TRỪ; kèm rewardShake + quakeShake (quake chưa có trigger ở P0). Hệ số 81 Hz là giả định 0.38° (TODO-RE); mapping trục (yaw/pitch/roll) là suy ra, ghi rõ. **Thêm sau AEGIS D5 (2026-11-21):** biên độ Y của Fever shake (0.009) MƯỢN từ rewardShake.y — feverShake KHÔNG có Y trong data — đã ghi rõ TODO-RE tại dòng code.
 
-### R-09 — Áp dụng detail atlas lên lưỡi kiếm (teal emissive)
-- **Vị trí:** `app/frontend/scene3d.js` `buildSwordPartMesh()` — blade emissive
+### R-09 — Áp dụng detail atlas lên lưỡi kiếm (teal emissive) — **ĐÃ RÚT LẠI / XÓA 2026-11-21 (F-3b)**
+- **Vị trí cũ:** `app/frontend/scene3d.js` `buildSwordPartMesh()` + `buildCatalogueSword()` — blade emissive
   `(0.04, 0.20, 0.24)`, intensity `0.55`, emissiveMap `SwordV2DetailAtlas.png`.
 - **Tình trạng nguồn:** texture atlas là thật (pid 1697); cách áp dụng qua shader
   ForgeTax/SwordV2/Surface TODO-RE (LAYOUT.md §7). CIPHER v2 (shader params)
-  đang thử. Trạng thái: **SỬA MỘT PHẦN THEO SỐ THẬT V2** (2026-11-21): shader + atlas + palette đã có → áp phần có (màu base = palette primary, emissiveMap = SwordV2DetailAtlas). Scalar params + teal emissive (0.04,0.20,0.24)/0.55 KHÔNG có trong dữ liệu (emission material = 0) → vẫn là đề nghị remake, giữ marker. ModelScale formula chưa trích — dùng scale base [0.59,0.62,0.72] (TODO-RE).
+  đang thử. Trạng thái cũ: **SỬA MỘT PHẦN THEO SỐ THẬT V2** (2026-11-21): shader + atlas + palette đã có → áp phần có (màu base = palette primary, emissiveMap = SwordV2DetailAtlas). Scalar params + teal emissive (0.04,0.20,0.24)/0.55 KHÔNG có trong dữ liệu (emission material = 0) → vẫn là đề nghị remake, giữ marker. ModelScale formula chưa trích — dùng scale base [0.59,0.62,0.72] (TODO-RE).
+- **RÚT LẠI 2026-11-21 (fix round, F-3b):** teal emissive là SAI — CIPHER v2 ghi rõ
+  SwordV2 emission ≈ 0 ("emission material = 0"); atlas là detail map, KHÔNG phải
+  glow map. Emissive này là NGUYÊN NHÂN vệt xanh trong video live p1 của OWNER:
+  mọi kiếm phát xanh dương-cyan trong phòng tối; kiếm gãy nằm phẳng trên sàn
+  (full face về camera) đọc thành các hình kiếm xanh lớn / thanh ngang xanh
+  (video 1 frames f_010/f_014/f_017 — hình dạng lưỡi + chắn tay + chuôi rõ ràng).
+  ĐÃ XÓA emissive + emissiveMap ở cả 2 vị trí; kiếm nay là thép thường với
+  albedo thật. `SwordV2DetailAtlas.png` không còn preload. Giả thuyết "vệt xanh
+  là con ma render sai" đã bị LOẠI TRỪ bằng chứng (xem R-36): con ma KHÔNG có
+  mesh trong level0, anchor của nó ở tường +X cạnh quầy (không phải lò), và
+  ảnh chụp sau khi xóa emissive không còn xanh ở cùng góc nhìn.
 
 ### R-10 — Ngọn lửa lò (3 sprite SoftFlame)
 - **Vị trí:** `app/frontend/scene3d.js` `buildFlames()` + `flamesTick()` — 3 vị trí /
@@ -291,6 +354,12 @@ trong build đều có marker TODO-RE, không trình bày như số thật.**
   nhau (pitch tính từ lookAt ≈ −14°). Cần CIPHER v2 (behavior) xác định cách
   blend spawn↔work view đúng. AEGIS đã tự tính lại: **−13.98° ≈ −14°**, xác
   nhận R-24 ghi đúng. Trạng thái: **ĐÃ SỬA THEO SỐ THẬT V2** (2026-11-21): pitch = workLookPitch = 10.0 (Range(0,35)); workBlend tiến tới đích 1−exp(−10·dt); FOV lerp 69→61 theo clamp01(workBlend) + kick×0.35; Punch kick cap 1.4. BỎ lookAt −14°. Kick decay rate KHÔNG có trong data — dùng 7/s mượn từ rewardImpulse decay (ghi rõ).
+  **SỬA DẤU 2026-11-22 (fix round):** workLookPitch 10° là 10° XUỐNG DƯỚI
+  đường ngang (đe nằm dưới mắt; video 2 f_025–f_033 cho đe ở giữa khung) —
+  nhưng code ghi `degToRad(+10.0)`, mà trong Three.js YXZ rotation.x dương =
+  nhìn LÊN (dirToYawPitch: pitch = asin(ny), ny âm khi nhìn xuống). Hậu quả:
+  work view nhìn lên trần + đèn treo, board ở mép dưới, đe ngoài khung
+  (ảnh fix-round 01-workview / 04-after-strikes). Đã sửa thành `degToRad(-10.0)`.
 
 ### R-26 — Kích thước giấy calendar (O-1 của AEGIS — bổ sung sau kiểm thử)
 - **Vị trí:** `app/frontend/scene3d.js` `makeBoardPlane('calendar', 0.85, 0.55, …)`.
@@ -363,13 +432,152 @@ trong build đều có marker TODO-RE, không trình bày như số thật.**
 
 ---
 
+---
+
+## Nhóm D — Fix round 2026-11-21 (sau live test v0.1.0-p1 của OWNER, 23:32) + P1 notes
+
+Các món dưới đây phát sinh trong vòng sửa F-1–F-10 (OWNER duyệt 23:47).
+Món nào là approximation đều ghi TODO-RE trong code; món nào là hiệu ứng
+trình bày mới đều ghi REMADE. Không món nào được tự duyệt — OWNER duyệt ảnh
+trước mọi push/release như thường lệ.
+
+### R-28 — Title screen: mapping 50%/49%/1% (TODO-RE, cần CIPHER)
+- **Vị trí:** `app/frontend/index.html` `#title-screen` (3 cột THOÁT 1% /
+  GIỮ NGUYÊN 49% / Bắt đầu game 50%) + `app/frontend/app.js` `showTitle()`.
+- **Bằng chứng:** `ForgeRoom.get_StartScreenChances()` (libil2cpp.so 3.17.0,
+  RVA 0x25B0220, disassemble bằng Capstone) build `int[5] = [0, 0, 500, 500, 0]`
+  → `ForgeChances {destruction 0, damage 0, hold 500, success 500, greatSuccess 0}`
+  (tổng 1000). `PressStartScreen` (0x25BA5B0) KHÔNG roll, KHÔNG tiêu chances —
+  bấm start LUÔN vào game (sau fade 0.65s). Board render 50/49/1 trên video 2
+  (f_003/f_006) nhưng chances thô cho hold 50% / success 50% / destruction 0%.
+- **Đề nghị:** render board Y HỆT video (50/49/1), ghi TODO-RE + nguồn chances
+  đã chứng minh; CIPHER follow-up khôi phục đúng rule hiển thị (suy đoán hiện
+  tại — floor mỗi outcome 1%, trừ vào share lớn nhất — CHƯA chứng minh, không
+  code theo). Trạng thái: **CHỜ CIPHER** (đã ghi TODO-RE trong code + handoff).
+
+### R-29 — Title camera pose (TODO-RE)
+- **Vị trí:** `app/frontend/scene3d.js` `setTitleView()` — eye `[-2.2, 1.75, 0.2]`,
+  nhìn về `[-1.0, 1.5, 2.4]` (khu đe/lịch).
+- **Bằng chứng:** pose title KHÔNG có trong extraction (`StartScreen.RememberView`
+  chỉ lưu pose TRƯỚC title; `RevealStartScreen` set pose trong code). Pose hiện
+  tại chọn để khớp bố cục f_003/f_006 bằng mắt.
+- **Đề nghị:** giữ pose tạm, verify bằng ảnh chụp so với f_003 rồi chỉnh.
+  Trạng thái: **TODO-RE** (ghi trong code + handoff).
+
+### R-30 — Vòng vàng tribute (REMADE effect)
+- **Vị trí:** `app/frontend/scene3d.js` `tributeRing()` + `tributeRingTick()` —
+  torus vàng (r 0.55, gold #d4af37, emissive #a67c00) ôm kiếm được dâng, fade ~1s.
+- **Bằng chứng:** video 2 (frame tribute) có vòng vàng gai ôm kiếm + dòng
+  "ĐÃ DÂNG: 1 kiếm / ...". KHÔNG có mesh vòng nào trong extraction (GO 409 /
+  layout data) — vòng là hiệu ứng vẽ thêm.
+- **Đề nghị:** giữ hiệu ứng REMADE, ghi rõ trong code + handoff. Trạng thái:
+  **REMADE — chờ OWNER duyệt ảnh** (đã ghi REMADE trong code).
+
+### R-31 — Fever phủ toàn màn hình: opacity teal (TODO-RE)
+- **Vị trí:** `app/frontend/index.html` `#fever-overlay` + `app.js` `loop()` —
+  opacity = feverAmount × 0.45, nền teal đậm #064e4a.
+- **Bằng chứng:** video 2 (f_027/f_033): Fever = toàn màn hình phủ xanh teal +
+  kiếm cầu vồng khổng lồ. `beginScreenFlash` trong behavior.json là
+  0.00015176348 (≈ 0) — KHÔNG có giá trị tint nào trong data. Hue cycling của
+  kiếm thì CÓ nguồn (FeverColor HSV, R-15).
+- **Đề nghị:** giữ 0.45 tạm, ghi TODO-RE; OWNER cảm nhận trên bản live.
+  Trạng thái: **TODO-RE** (ghi trong code + handoff).
+
+### R-32 — Banner lớn "ĐẠI THÀNH CÔNG / 3.5x" (REMADE presentation)
+- **Vị trí:** `app/frontend/index.html` `#great-banner` + `app.js`
+  `showGreatBanner(ratio)` — hiện ~1.6s khi Great.
+- **Bằng chứng:** video 2 frame f_030: chữ LỚN phủ ngang màn hình khi Great.
+  Ratio là số thật (value mới / value cũ từ strike payload). Cách trình bày
+  (DOM banner, cỡ chữ, thời gian) là của remake — gốc không có DOM.
+- **Đề nghị:** giữ banner REMADE, ghi rõ trong code + handoff. Trạng thái:
+  **REMADE — chờ OWNER duyệt ảnh** (đã ghi REMADE trong code).
+
+### R-33 — Vị trí lưới xác suất trên giấy ledger (REMADE presentation)
+- **Vị trí:** `app/frontend/scene3d.js` `drawLedger()` — giấy kem + lưới 5 cột ×
+  20 hàng dưới các dòng live.
+- **Bằng chứng:** GIÁ TRỊ là thật (`Run::deck_raw()` + `Run::seal_factor()` từ
+  core; frame f_018: 4/12/16/16/20 = 68 late-game, starter [9,2,5,18,4] = 38).
+  Ledger GO 409 mesh null, materials [] — KHÔNG có texture giấy in sẵn; lưới là
+  runtime-drawn trong gốc (chữ VI-localized nên không thể là texture nướng).
+  VỊ TRÍ lưới trên giấy (dưới các dòng live, 2/3 dưới tờ giấy) KHÔNG có trong
+  extraction — là lựa chọn trình bày của remake. Kìm + búa trên giấy (f_018)
+  không có mesh — bỏ qua, ghi chú.
+- **Đề nghị:** giữ layout tạm, verify bằng ảnh chụp so với f_018. Trạng thái:
+  **REMADE (layout) + SỐ THẬT (giá trị)** — chờ OWNER duyệt ảnh.
+
+### R-34 — Tư thế kiếm cầm tay (TODO-RE) + colliders đi bộ (TODO-RE)
+- **Vị trí:** `app/frontend/scene3d.js` `setHeldSword()` (pose: lưỡi lên-phải
+  55°, chuôi dưới-giữa, offset `[0.28, -0.32, -0.55]`) + `WALK_COLLIDERS`
+  (đe r 0.8, lò r 1.15, quầy r 0.85) + `WALK_BOUNDS` (margin 0.35 m).
+- **Bằng chứng:** pose cầm tay KHÔNG có trong extraction (tune bằng mắt so với
+  f_035: lưỡi lên-phải, chuôi dưới-giữa). Collision KHÔNG có trong extraction
+  (chỉ có room bounds X −3.0…3.2 × Z −2.5…3.1 từ LAYOUT.md §2; bán kính va chạm
+  là xấp xỉ từ footprint). Tốc độ đi 2.09 m/s thì CÓ nguồn
+  (behavior.json walkSpeedBase).
+- **Đề nghị:** giữ các giá trị tạm, ghi TODO-RE; OWNER cảm nhận trên bản live.
+  Trạng thái: **TODO-RE** (ghi trong code + handoff).
+
+### R-35 — Âm thanh tổng hợp lại theo phổ WAV (REMADE, đã rebuild F-4)
+- **Vị trí:** `app/frontend/sound.js` — viết lại toàn bộ trigger theo bảng phổ
+  đo bằng `remake/tools/fft-ref.py` (numpy) từ 101 WAV tham chiếu (không ship
+  file gốc): strike 3455 (thump 70→38 Hz + whoosh 2k→6.5k + clang 6262/4300/
+  3100 Hz), Great 3434 (ring 1628 Hz), break 3476 (thud 150→70 Hz + shatter
+  732/1052/2423 Hz + noise), bell 3407 (inharmonic 3603/1302/6705 Hz, decay
+  2.4s) + feed 3411 (rumble 116/220 Hz + scrape 3.2 kHz), fever 3452 (36 Hz
+  fundamental + 72/108/216 Hz, 3.8s), set 3404 (click 1755 Hz), crackle 432
+  (pops 5–8 kHz ngẫu nhiên + bed 120 Hz rất nhỏ, RMS ~0.005).
+- **Đã xóa:** drone 110 + 165 Hz (nguyên nhân track 46s bị thống trị bởi 2 nốt
+  đó trên video live, FFT-proven) + `playCoin()` (không có cue coin trong gốc,
+  EFFECTS.md §5). Master bus: DynamicsCompressor (threshold −12 dB, ratio 8:1)
+  + master gain 0.9 (đỉnh không chạm 1.0).
+- **Verify:** `sound.renderOffline(trigger)` (OfflineAudioContext + FFT JS)
+  so với bảng tham chiếu — browser test check centroid/bands/partials/peak.
+  Trạng thái: **REMADE — chờ AEGIS kiểm độc lập bằng FFT/nghe so sánh**
+  (tiêu chí pass/fail hàng đầu của vòng này; ghi REMADE trong code).
+
+### R-36 — Merchant = Ghost (P1 notes — KHÔNG làm trong vòng này)
+- **Đã xác nhận từ data (manager kiểm 2026-11-22 00:21):** ghost CHÍNH LÀ thương
+  nhân — code có `ForgeGhostMerchant` + `MerchantBanterCatalog` +
+  `MerchantArrival` (3456_MerchantArrival.wav 3.12s) + `MerchantGoods` +
+  `MerchantStallLayout`; vi.txt: "Vật dùng một lần do thương nhân ma bán",
+  "Thương nhân hiện không mở bán", "Thương nhân ma · từ vòng {round}",
+  "3 lượt mua miễn phí mỗi khi Thương Nhân Ma xuất hiện" (iap.ads_removed),
+  28 special lines có merchantNameKey/merchantWeight,
+  OwnerFreeMerchantBuys = 3. Shop/cấp đồ là P1.
+- **Ghost figure KHÔNG có mesh trong level0 (đã kiểm 2026-11-22):** layout.json
+  chỉ có anchor rỗng "Ghost merchant — wall visit" (go 3275) tại [2.84, 0, −0.5]
+  (tường +X cạnh quầy), mesh null, materials [], KHÔNG có child nào, KHÔNG có
+  skinned mesh nào trong toàn bộ 3,672 objects. `scene-data.json` (303 objects)
+  cũng không có object ghost/merchant nào. Ghost figure là prefab spawn lúc
+  runtime (ForgeGhostMerchant) — mesh/texture của nó KHÔNG có trong scene
+  level0. **CIPHER follow-up cho P1:** tìm prefab + materials của ghost figure
+  trong APK (không phải level0).
+- **"Sau 3 ngày họ sẽ cấp đồ" — CHƯA XÁC MINH (ghi chú, không code theo):**
+  manager chưa tìm thấy luật "3 ngày" tường minh trong code đã trích (chỉ thấy
+  "từ lần ghé tiếp theo", "lần ghé của thương nhân"). Đây là luật timing của
+  merchant (chu kỳ ghé? ngày xuất hiện đầu? giao hàng sau 3 ngày?) — CẦN xác
+  minh trong decompile trước khi implement P1. OWNER sẽ làm rõ. KHÔNG tự suy
+  diễn thành luật rồi code theo.
+- **Vệt xanh video 1 KHÔNG phải con ma (đã loại trừ 2026-11-22):** (1) vệt xanh
+  có HÌNH KIẾM rõ ràng (lưỡi + chắn tay + chuôi, nằm phẳng trên sàn trước đe —
+  video 1 f_010/f_014/f_017); (2) kiếm trên đe cũng phát xanh dọc lưỡi (cùng
+  emissive); (3) ghost không có mesh trong level0 nên không thể render sai;
+  (4) anchor ghost ở tường +X cạnh quầy, không phải vị trí vệt xanh (sàn trước
+  đe / khu lò); (5) vật liệu xanh duy nhất trong data là "Ghost blue stamp"
+  [0.1,0.42,0.48] trên các stamp "Merchant scales" tí hon (scale 0.0325, ~6cm)
+  trên lịch — sai vị trí và quá nhỏ; (6) cụm lò chỉ có Ember (cam) + Soot
+  (đen); (7) ảnh chụp sau khi xóa emissive (F-3b) không còn xanh ở cùng góc
+  nhìn. Nguyên nhân vệt xanh = teal emissive của kiếm (R-09, đã xóa).
+  Trạng thái: **P1 NOTES** (không code trong vòng này).
+
 ## Tổng kết số lượng
 
 | Nhóm | Số món | Trạng thái |
 |---|---|---|
 | A — Đề nghị remake (OWNER duyệt 2026-11-21 19:47) | 12 (R-04, R-05, R-08, R-16, R-17, R-18, R-19, R-20, R-21, R-22, R-25, R-27) | **ĐÃ DUYỆT — REMADE** (R-17/R-20 nâng cấp bằng số thật v2) |
-| B — Kết quả CIPHER v2 | 14 (R-01, R-02, R-03, R-06, R-07, R-09, R-10, R-11, R-12, R-13, R-14, R-15, R-24, R-26) | 7 sửa hết (R-02, R-03, R-07, R-10, R-11, R-12, R-24); 5 sửa một phần (R-06, R-09, R-13, R-15, R-26); 2 vẫn thiếu (R-01, R-14) |
+| B — Kết quả CIPHER v2 | 14 (R-01, R-02, R-03, R-06, R-07, R-09, R-10, R-11, R-12, R-13, R-14, R-15, R-24, R-26) | 7 sửa hết (R-02, R-03, R-07, R-10, R-11, R-12, R-24); 4 sửa một phần (R-06, R-13, R-15, R-26); R-09 ĐÃ RÚT LẠI/XÓA (F-3b, 2026-11-21); 2 vẫn thiếu (R-01, R-14) |
 | C — Sửa theo nguồn gốc | 5 (F-01 [+F-01b], F-02, F-04, F-05; F-03 ĐÃ RÚT LẠI) | **ĐÃ SỬA HẾT** (F-04 sửa trong v2) |
+| D — Fix round 2026-11-21 (sau live test p1) + P1 notes | 9 (R-28–R-36) | R-28/R-29/R-31/R-34 TODO-RE (chờ CIPHER/OWNER cảm nhận); R-30/R-32/R-33/R-35 REMADE (chờ OWNER duyệt ảnh); R-36 P1 notes (merchant=ghost, 3-ngày chưa xác minh) |
 
 **Cam kết của SENSOR:** không tự duyệt món nào, không remake thêm món nào trước
 khi OWNER duyệt. Món nào được duyệt sẽ được ghi `REMADE` trong code + báo cáo

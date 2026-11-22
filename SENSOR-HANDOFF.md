@@ -421,3 +421,555 @@ lỗi game hay chỉ là headless chậm; (b) nhãn outcome sau khi co font có
 còn đúng cỡ ghi trong TextMesh không (ghi rõ là adaptation); (c) vị trí
 đèn radiance Fever (0.4m trên kiếm) có chấp nhận được không, hay cần
 anchor khác; (d) mọi số trong §2 đối chiếu lại với .zip v2.
+
+---
+
+## 9. FIX ROUND 2026-11-21 (sau live test v0.1.0-p1 của OWNER, 23:32) + bổ sung 00:21–00:22
+
+**Bối cảnh:** OWNER test live bản v0.1.0-p1 trên EliteBook (2 video: remake p1
+46.6s + gốc iPhone 187.9s). App boot được, đập/tribute/end-day chạy, run kết
+thúc đúng luật — nhưng 4 lỗi: (1) KHÔNG ĐI ĐƯỢC (zero code WASD), (2) FPS 9–16,
+(3) phòng tối đen + vệt xanh ở lò, (4) âm thanh sai hoàn toàn (FFT-proven:
+track 46s bị thống trị bởi 110 + 165 Hz = 2 drone oscillator trong sound.js
+cũ). Manager xem hết video 2 (38 frame, 5s/frame) + OWNER ra lệnh bổ sung
+23:47 (TITLE + ĐIỀU KHIỂN + SOUND chuẩn + RỒNG thật) và 00:21–00:22 (kiểm tra
+lại vệt xanh có phải con ma + merchant = ghost, P1). **Chưa push, chưa release
+— chờ AEGIS kiểm lại rồi OWNER duyệt ảnh.**
+
+### 9.1 Từng fix + nguồn số liệu
+
+| # | Fix | File | Nguồn số liệu |
+|---|---|---|---|
+| F-1 | Đi bộ WASD + mũi tên (2.09 m/s, eye Y 1.76, bounds phòng chính X −2.68…2.81 × Z −2.15…2.78, colliders tròn đe/lò/quầy TODO-RE); "Góc nhìn cố định" = khóa vị trí; drag-look giữ nguyên; workBlend 1↔0 theo 1−exp(−10dt); đập glide về work eye 3.5 m/s, snap 0.1 m, timeout 0.75 s, slerp exp(−12dt) | `scene3d.js` applyCamera/setMoveKeys/setControlsMode/requestWorkView + `app.js` keydown/keyup | `behavior.json` forge_first_person (walkSpeedBase 2.09, moveToWorkStandSpeed 3.5, workStandReach 0.1, workArriveTimeout 0.75, workBlendRate, rotationSlerpRate); room bounds LAYOUT.md §2 (X −3.0…3.2 × Z −2.5…3.1); colliders/margin TODO-RE |
+| F-1/E | E = nhặt/đặt kiếm ("Lấy kiếm", reach 2.2 m): đe (cầm kiếm hiện tại → đe trống, đập chỉ vung + whoosh, không gọi backend), sàn (kiếm gãy), quầy (kiếm nghỉ — CHỈ cầm xem, KHÔNG được đặt lên đe vì desync core → P1 follow-up); kiếm cầm tay gắn camera (lưỡi lên-phải 55°, TODO-RE pose); click 1755 Hz khi nhặt/đặt | `scene3d.js` tryPickup/tryPlaceOrDeposit/setHeldSword/clearHeldSword + `app.js` doPickup/heldSword | `behavior.json` reachFreeMove.sword 2.2, noSwordLockoutSec 3.2; `touch.take_sword` "Lấy kiếm" (vi.txt); pose cầm tay tune theo video 2 f_035 (TODO-RE) |
+| F-2 | Low THẬT SỰ giảm cost: boot-time antialias OFF + render scale 0.75 (WebGL AA không đổi được runtime), live pixelRatio 0.75, burst ×0.5, tắt 6/11 Spot (giữ Fire, Work lamp, Eye, Breath, Quota). Đo: pixelRatio + lightsOn (draw call KHÔNG đổi khi tắt đèn — meshes vẫn draw; call count đo được 123→131 là nhiễu trạng thái scene, không phải proxy) | `scene3d.js` init/setQuality/burstMultiplier/getStats + `app.js` boot (init opts quality) | WebGL spec (AA boot-time); 11 Spot thật từ `scene-data.json` lights |
+| F-3a | Brightness 20–200% bằng EXPOSURE (toneMappingExposure = 1.15 × (b/70), clamp [0.2, 3.5]); XÓA div phủ đen + slider max 100→200. Fill tăng 2 lần: 4.0/2.5/14/12 → 7.0/4.0/22/18 → 18.0/9.0/40/20 (fireGlow dời ra trước miệng lò [2.95, 1.35, 2.75] vì ở 32 trong miệng lò cháy trắng bề mặt trong) | `scene3d.js` setBrightness/buildLights + `index.html` (xóa overlay, max 200) + `styles.css` (xóa rule) + `app.js` applySettings | Original brightness 200% (video 2, Ethan chơi 200%), default 70% (`behavior.json` settings_defaults); fill là R-08 approximation (baked lightmaps vắng mặt) |
+| F-3b | XÓA teal emissive + emissiveMap khỏi lưỡi kiếm (cả 2 vị trí: catalogue + base Blade); bỏ preload `SwordV2DetailAtlas.png` | `scene3d.js` buildCatalogueSword/buildSwordPartMesh | CIPHER v2: SwordV2 emission ≈ 0 ("emission material = 0") — atlas là detail map, không phải glow map. Đây là nguyên nhân vệt xanh (xem §9.4) |
+| F-4 | Viết lại sound.js toàn bộ theo phổ WAV (bảng `remake/tools/fft-ref.py`): XÓA drone 110+165 Hz; XÓA `playCoin()`; rebuild strike/Great/break/bell+feed/fever/set/crackle; DynamicsCompressor (−12 dB, 8:1) + master gain 0.9; `renderOffline()` verify bằng FFT JS | `sound.js` (rewrite) + `app.js` doTribute (bỏ playCoin) | 101 WAV tham chiếu (không ship file gốc); xem bảng phổ chi tiết §9.2. Great đổi từ strike+ring → ring thuần (3434 là 99% 1–4 kHz, không low end) sau lần đo 1 |
+| F-5 | Menu pause: nút hành động Tiếp tục (đóng) / Sổ sưu tập (DISABLED, codex P1) / Chơi lại từ đầu (doNewRun) / Về màn hình chính (showTitle); tiêu đề panel "Menu"; KHÔNG hiện "Gỡ quảng cáo" (không có key vi.txt, không có ads) | `index.html` (menu-actions) + `styles.css` (.menu-btn) + `app.js` bindMenuButtons + `i18n.js` (menu2.*) | Video 2 f_008 (5 nút + settings); `menu2.resume/restart/returnTitle/codex` (vi.txt) |
+| F-6 | Ledger: giấy kem + lưới xác suất 5 cột × 20 hàng (ô + xanh / □ trống, tổng dưới mỗi cột) từ LIVE core data; "TỔNG {n}", "TRỌNG SỐ GÃY x{seal}", note; giữ 5 dòng live + anger line | `forgetax-core/src/run.rs` (`deck_raw()` + `seal_factor()` + 2 tests), `app/src-tauri/src/main.rs` + `tools/dev-server/src/main.rs` (snapshot thêm `deck` + `seal`), `scene3d.js` drawLedger, `app.js` buildView, `i18n.js` (template.ticket_total, ui.8becf7224b, ui.ticket_note) | `fill_deck` (tickets.rs:109) + `SEAL_RISK` 0.85 (config.rs:80); starter deck [9,2,5,18,4]=38 (tính từ fill_deck); video 2 f_018 (4/12/16/16/20=68 late-game — KHÔNG dùng số này, chỉ dùng làm mẫu layout); Ledger GO 409 mesh null (không có texture giấy in sẵn) |
+| F-7 | Lò rèn chuẩn f_015: ghi kim loại tối + than cam phát sáng có chiều sâu + lửa cam — đạt được nhờ F-3b (xóa xanh) + F-3a (sáng + fireGlow đúng vị trí); verify bằng ảnh 07-furnace.png | (không code riêng — hệ quả F-3a/F-3b) | Video 2 f_015/f_016; than Ember [0.5,0.11,0.01] + Soot (layout.json) |
+| F-8 | Fever phủ toàn màn hình: overlay teal DOM (opacity = feverAmount × 0.45, TODO-RE) + rainbow glow kiếm (FeverColor HSV, đã có từ R-15) | `index.html` #fever-overlay + `styles.css` + `app.js` loop() | Video 2 f_027/f_033; `beginScreenFlash` 0.00015176348 (≈0, không có giá trị tint) |
+| F-9a | Vòng vàng tribute: torus vàng (r 0.55, #d4af37) ôm kiếm, fade ~1s, tại đe (bell-click) hoặc chuông (E-deposit) | `scene3d.js` tributeRing/tributeRingTick + `app.js` doTribute/doPickup | Video 2 (frame tribute); KHÔNG có mesh vòng trong extraction → REMADE effect |
+| F-9b | Sàn: verify floor swords render sau gãy + kiếm nghỉ trên quầy (đã có từ trước, nay hết xanh sau F-3b) | (verify bằng ảnh 04-after-strikes.png) | Video 2 f_035 (3 kiếm trên sàn, thép thường) |
+| F-9c | Banner lớn "ĐẠI THÀNH CÔNG / ×{ratio}" ~1.6s khi Great (ratio = value mới / value cũ, số thật) | `index.html` #great-banner + `styles.css` + `app.js` showGreatBanner/doStrike | Video 2 f_030; presentation REMADE (DOM, không phải HUD frame) |
+| F-10 | Title screen: boot vào bảng đồng "FORGE TAXX / Bắt đầu game" (50/49/1 Y HỆT video) + "Chạm để tiếp tục" (bob 7px); click → fade → resume run đang chơi hoặc new_run; "Về màn hình chính" quay lại title | `index.html` #title-screen + `styles.css` (.title-plaque) + `app.js` showTitle/hideTitle/startFromTitle + `scene3d.js` setTitleView/setWorkView + `i18n.js` (menu2.startGame, start.exit, ui.bb3ad48c0b, ui.826f8ad351) | Video 2 f_003/f_006; `ForgeRoom.get_StartScreenChances()` = [0,0,500,500,0] (disassemble libil2cpp.so, Capstone); `PressStartScreen` KHÔNG roll; mapping 50/49/1 TODO-RE (R-28); pose title TODO-RE (R-29); "Chạm để tiếp tục" (vi.txt) |
+
+### 9.2 Bảng phổ âm thanh (đo bằng `remake/tools/fft-ref.py`, numpy, WAV 16-bit mono 44.1 kHz)
+
+| Trigger | WAV | Đặc tính đo được | Synth mới |
+|---|---|---|---|
+| strike | 3455_basic_swing (1.00s, RMS 0.135, peak 0.861, centroid 7102 Hz) | <200 Hz 41%, 4–8k 32%, >8k 21%; partials 22 Hz (1.00), 6262 Hz (0.65); RMS đỉnh 300–400 ms, chết sau 0.5s | thump 70→38 Hz 0.3 + whoosh 2k→8k 0.4 + clang 6262/4300/3100/8400 Hz |
+| Great | 3434_GreatStrike (1.15s, RMS 0.138, peak 0.730, centroid 3186 Hz) | 1–4k 99%; 1628 Hz (1.00), 4303 (0.08), 3254 (0.06); decay ~0.3s | ring thuần 1628 (0.5) + 4303/3254/2430 (KHÔNG thump/whoosh — lần 1 sai: strike+ring cho peak 1.087 + chỉ 44% 1–4k) |
+| break | 3476_SwordBreak (1.20s, RMS 0.078, peak 0.758, centroid 3141 Hz) | <200 35%, 200–1k 33%, 1–4k 28%; 182 (1.00), 122 (0.86), 2423 (0.65), 732 (0.45), 1052 (0.41) | thud 150→70 Hz 0.25 + 182 (0.18) + shatter 732/1052/2423 + noise 2k 0.35 |
+| bell | 3407_TributeBell (2.42s, RMS 0.093, peak 0.648, centroid 4625 Hz) | 1–4k 92%; INHARMONIC 3603 (1.00), 6705 (0.20), 1302 (0.17); decay 2.4s | 3603 (0.38) + 1302 (0.07) + 6705 (0.08) + feed 116/220 Hz + scrape 3.2 kHz |
+| fever | 3452_FeverOverdrive (7.60s file, RMS 0.166, peak 0.819) | <200 Hz 81%; fundamental **36 Hz** (1.00) + 72/108/216 Hz (73/215/322 Hz đo trước là harmonic 2×/3×); sustain ~3.8s in-game | sine 36/72/108/216 Hz, attack 0.3s, sustain 3.8s |
+| set | 3404_SwordSet (0.09s, RMS 0.053, peak 0.360, centroid 2130 Hz) | 1–4k 92%; 1755 Hz (1.00), 1143 (0.32) | click 1755 (0.25) + 1143 (0.08) |
+| feed | 3411_SwordFeed (1.06s, RMS 0.051, peak 0.289, centroid 3471 Hz) | 116/220 Hz rumble + scrape ~3.2 kHz | (trong playTribute) 116/220 Hz + noise 3.2 kHz |
+| crackle | 432_Hearth_crackle_loop (58.46s, RMS 0.0055 — RẤT nhỏ, peak 0.801) | pops broadband 5–8 kHz + bed ~120 Hz | pops ngẫu nhiên 5–8 kHz (0.04–0.12, 20–50 ms, mỗi 0.25–1.2s) + bed 120 Hz 0.012 |
+| thump ref | 3402_impact_heavy_tail (2.48s, RMS 0.180, peak 0.882, centroid 148 Hz) | 100% <200 Hz, 32 Hz (1.00) | (tham chiếu cho thump của strike) |
+
+**Kết quả FFT offline (lần 1, trước rebalance):** tribute/bell, fever, set, crackle
+PASS (bell: peak 0.508, centroid 3685, band 1–4k 0.97, partials 3596/6697/1292 —
+khớp 3603/6705/1302 gần như chính xác; fever: peak 0.428, centroid 76, <200 Hz
+0.98, partials 43/108/215; set: peak 0.299, centroid 1595, partials 1766/1141;
+crackle: RMS 0.0085 < 0.02). Strike/great/break FAIL (thump quá to: strike 89%
+<200 Hz, centroid 3637; great peak 1.087 + chỉ 44% 1–4k; break 80% <200 Hz,
+peak 0.963). **Đã rebalance (lần 2, xem §9.1 F-4) — kết quả lần 2: 5/7 PASS**
+(great PASS sau khi đổi thành ring thuần: peak 0.554, band 1–4k 0.99, partials
+1637/4307/3252/2433; strike còn band[0] 0.64 + band[4] 0.01; break còn peak
+0.982). **Rebalance lần 3 (thump strike 0.25, whoosh 0.36 + highpass 8k 0.12,
+partial 8400 Hz 0.12; break noise 0.25 + 2423 Hz 0.3): FFT 7/7 PASS, 5 lần
+chạy liên tiếp** (`tools/dev-server/fft-test.js`, nhanh, không cần full test):
+strike peak 0.73–0.79, centroid ~7800–8056 (≈ ref 7102), bands [0.53, 0, 0.06,
+0.35, 0.06], partials 65/6266/4307/8398/3101; break peak 0.87–0.88, centroid
+~3200, bands [0.49, 0.17, 0.34]. Lưu ý: peak của strike/break dao động theo
+noise ngẫu nhiên (0.856 một lần, 0.954 lần khác) nên cần margin dưới 0.95 —
+đã giảm gain để có margin.
+
+### 9.3 Kết quả kiểm chứng fix round (lần 1 — test đầy đủ, EXIT=0, 2026-11-22)
+
+- `cargo test -p forgetax-core`: **82/82 PASS** (80 cũ + 2 mới:
+  `deck_raw_starter_is_9_2_5_18_4`, `seal_factor_is_0_85_with_starter_seal`).
+- Headless browser test: **EXIT=0** (6.7 phút), **0 console errors, 0 failed
+  requests**. Title hiện lúc boot → click → run playing, deck [9,2,5,18,4] +
+  seal 0.85 ✓. **WASD: camera [0.15,1.76,−0.05] → [−0.687,1.76,1.487],
+  1.75 m** ✓. **E: held=true sau E, held=false sau E lần 2** ✓ (ảnh 03-held:
+  kiếm cầm tay hiện, lưỡi lên-phải, chuôi dưới-giữa — nhưng lưỡi còn đen vì
+  fill lúc đó mới 7.0; đã tăng lên 18.0 sau đó). 12 đập → grade 0→5, value
+  320→7,375 G ✓. Brightness: exposure 200% = 3.286, 70% = 1.15 ✓. Menu:
+  hiện, tiêu đề "Menu", đủ 4 nút, codex disabled, Home → title lại → click
+  → resume round 1, Resume đóng panel ✓. Tribute ✓ (round_tributed 0→1).
+  End day ✓ (round 1→2). Fever ✓ (active, time_left 4s) + Great banner ✓
+  (greatSeen: true). Low: pixelRatio 0.75 + đèn 5/11 (call count 123→131 là
+  nhiễu trạng thái scene — không dùng làm proxy). FPS counter "0 FPS"
+  (SwiftShader ~0.3 fps headless — không phải FPS thật; FPS thật chỉ OWNER
+  test live mới kết luận).
+- **Lỗi test gặp khi chạy (đã sửa):** (1) lần 1: dev-server start sai cwd
+  (`remake/` thay vì `tools/dev-server/`) → `../../app/frontend` trỏ sai →
+  404 → Chrome load bản cache cũ (không có title-screen). Sửa: start với arg
+  `app/frontend` + xóa `/tmp/ft-chrome-test`. (2) lần 2: anvil tap target
+  lọt khỏi màn hình sau khi đi bộ (camera quá gần đe, target y=950). Sửa:
+  `setWorkView()` trước khi tap.
+- **Ảnh đã xem (lần 1):** 00-title (bảng đồng đẹp, 50/49/1 đúng, lò sau lưng
+  không xanh), 01-workview (không xanh; lưới ledger kem + ô + xanh hiện rõ;
+  phòng vẫn tối nửa trái — đã tăng fill sau đó), 02-walked (đi bộ tới sát
+  board, lưới ledger rõ), 03-held (kiếm cầm tay, lưỡi đen — đã tăng fill),
+  07-furnace (ghi kim loại tối + than cam, KHÔNG xanh — nhưng miệng lò cháy
+  trắng do fireGlow 32 trong miệng lò; đã giảm 20 + dời ra trước lò),
+  10-fever (wash teal toàn màn hình ĐÃ hiện; overlay opacity đọc 0 tại thời
+  điểm check vì envelope flicker — xem §9.5). **Chưa xem:** 04-after-strikes,
+  05-bright200, 06-bright70, 08-menu, 09-great, 11-ledger (lần 1) — xem sau
+  lần chạy 2.
+
+### 9.4 Vệt xanh KHÔNG phải con ma — bằng chứng loại trừ (bổ sung 00:21–00:22)
+
+OWNER hỏi: vệt xanh có thể là mesh GhostMerchant render sai? **Đã kiểm tra
+ngay, kết luận: KHÔNG PHẢI. Vệt xanh là emissive teal của kiếm (R-09, đã xóa).**
+Bằng chứng:
+1. Video 1 f_010/f_014/f_017: vệt xanh có **HÌNH KIẾM rõ ràng** (lưỡi + chắn
+   tay + chuôi, nằm phẳng trên sàn trước đe) + kiếm trên đe phát xanh dọc
+   lưỡi (cùng emissive). Không có figure trùm đầu / áo choàng / mặt.
+2. Ghost figure **KHÔNG CÓ mesh trong level0**: layout.json (3,672 objects)
+   chỉ có anchor rỗng "Ghost merchant — wall visit" (go 3275) tại
+   [2.84, 0, −0.5], mesh null, materials [], KHÔNG có child nào, KHÔNG có
+   skinned mesh nào trong toàn bộ level0. `scene-data.json` (303 objects)
+   cũng không có object ghost/merchant nào. Ghost là prefab spawn lúc runtime
+   (ForgeGhostMerchant) — mesh/texture của nó KHÔNG có trong scene level0.
+3. Anchor ghost ở tường +X cạnh quầy [2.84, 0, −0.5] — KHÔNG phải vị trí vệt
+   xanh (sàn trước đe / khu lò [2.236, 1.927]).
+4. Vật liệu xanh duy nhất trong data là "Ghost blue stamp" [0.1, 0.42, 0.48]
+   trên các stamp "Merchant scales" tí hon (scale 0.0325, ~6cm) trên lịch —
+   sai vị trí và quá nhỏ.
+5. Cụm lò chỉ có Ember [0.5, 0.11, 0.01] (cam) + Soot [0.023, 0.028, 0.031]
+   (đen) — không có xanh.
+6. Ảnh chụp sau khi xóa emissive (F-3b) không còn xanh ở cùng góc nhìn
+   (00-title, 01-workview, 02-walked, 03-held, 07-furnace).
+7. **Cần CIPHER follow-up cho P1:** tìm prefab + materials của ghost figure
+   trong APK (không phải level0) — xem R-36.
+- **Merchant = Ghost (đã xác nhận từ data, manager 00:21):** ForgeGhostMerchant
+  + MerchantBanterCatalog + MerchantArrival (3456, 3.12s) + MerchantGoods +
+  MerchantStallLayout; vi.txt: "Vật dùng một lần do thương nhân ma bán",
+  "Thương nhân hiện không mở bán", "Thương nhân ma · từ vòng {round}",
+  "3 lượt mua miễn phí mỗi khi Thương Nhân Ma xuất hiện", 28 special lines có
+  merchantNameKey/merchantWeight, OwnerFreeMerchantBuys = 3. Shop/cấp đồ là P1.
+- **"Sau 3 ngày họ sẽ cấp đồ" — ĐÃ XÁC MINH (manager, 2026-11-22 00:42,
+  ghi trong MEMORY.md):** ghost merchant ghé mỗi 3 ngày, lần đầu ngày 3
+  (StockConsumableSlots forces ward+rewind; goods min-days 3/6/9 pattern);
+  cấp nhiều món: 28 special swords (merchantNameKey), consumables, relics,
+  3 lượt mua miễn phí mỗi lần xuất hiện. **TICKETS ĐỔI TỈ LỆ — ĐÃ XÁC NHẬN:**
+  ticketdamage/tickethold/ticketsuccess/ticketgreat, mỗi cái +1 ticket của
+  outcome đó cho run (BoughtTickets); Economy liệt kê 6 ticket goods; ngược
+  lại, knife relic trừ 1 base ticket (giảm tỉ lệ đó). Chi tiết vào P1
+  merchant spec (R-36). Không code trong vòng này.
+
+### 9.5 Giá trị VẪN TẠM THỜI (bổ sung sau §3)
+
+- Title 50/49/1 mapping (R-28, TODO-RE) + title camera pose (R-29, TODO-RE).
+- Fever overlay opacity 0.45 (R-31, TODO-RE); **lưu ý:** overlay theo
+  `feverAmount` (FeverEnvelope hash-gated) nên NHẤP NHÁY theo envelope (lúc
+  0 lúc 0.45) — ảnh 10-fever bắt được lúc ON (teal rõ), nhưng check opacity
+  đọc 0 tại thời điểm khác. AEGIS/OWNER xem có chấp nhận flicker này không,
+  hay wash nên steady trong suốt Fever (đó sẽ là lệch khỏi envelope).
+- Tư thế kiếm cầm tay (R-34) + colliders đi bộ + margin 0.35 m (R-34, TODO-RE).
+- Vị trí lưới ledger trên giấy (R-33, REMADE layout; giá trị thật).
+- Vòng vàng tribute (R-30, REMADE) + banner Great (R-32, REMADE).
+- Fill lights 18.0/9.0/40/20 (R-08, tune từ ảnh chụp — nếu OWNER vẫn thấy tối
+  trên EliteBook thì tăng tiếp; baked lightmaps thật vẫn vắng mặt).
+- Âm thanh: timbres tổng hợp là REMADE (R-35); Great đổi thành ring thuần
+  sau lần đo 1 (3434 là 99% 1–4 kHz — suy luận "Great cue thay basic swing",
+  chưa có chứng minh code-level nào trigger thay thế; AEGIS kiểm lại).
+- i18n: `ui.outcome_damage` vi sửa "HỎNG" → "HƯ HẠI" (nhãn gốc trên board,
+  video 2 f_027 CCW + vi.txt `ui.ea06c739f7`).
+- Test note: draw-call count KHÔNG phải proxy cho Low (nhiễu trạng thái
+  scene); proxy đúng là pixelRatio + lightsOn. FPS headless "0 FPS" là
+  SwiftShader, không phải FPS thật.
+
+### 9.7 Phát hiện sau lần chạy 2 + sửa bổ sung + kết quả lần chạy 3 (2026-11-22)
+
+**Ba lỗi mới phát hiện khi xem ảnh lần chạy 2 (không có trong brief gốc):**
+
+1. **Work view SAI DẤU PITCH (R-24, nghiêm trọng nhất):** ảnh 01-workview /
+   04-after-strikes lần 1–2 cho camera nhìn LÊN trần + đèn treo, board ở mép
+   dưới, đe ngoài khung — dù đã đập 12 lần (mỗi lần đều `requestWorkView()`).
+   Nguyên nhân: `workPitch = degToRad(+10.0)`; trong Three.js YXZ rotation.x
+   dương = nhìn LÊN (`dirToYawPitch`: pitch = asin(ny), ny âm khi nhìn xuống;
+   test `setView(-133,-12)` cho ảnh lò đúng chứng minh pitch âm = nhìn xuống).
+   workLookPitch 10° của gốc là 10° XUỐNG DƯỚI đường ngang (đe dưới mắt; video
+   2 f_025–f_033 cho đe ở giữa khung). Đã sửa thành `degToRad(-10.0)` — ảnh
+   lần 3: đe ở GIỮA khung, bảng bên phải, khớp video 2. Lỗi này có từ trước
+   fix round (R-24 V2) nhưng AEGIS vòng 3 không bắt được (board/ledger vẫn
+   còn trong khung, chỉ thấp xuống).
+2. **Miệng lò cháy trắng — chẩn đoán bằng `tools/dev-server/furnace-diag.js`
+   (5 biến thể, đã lưu `diag-a…e.png`):** trắng SỐNG SÓT khi tắt fill
+   (hemi/amb 0) VÀ khi tắt flames — chỉ biến mất khi tắt fireGlow. Nguyên
+   nhân: fireGlow (20) chiếu vào đá "Rough exposed stone core" (albedo 0.31)
+   quanh miệng lò (20/0.85²×0.31/π ≈ 2.8, clip trắng); hemi 18 một mình đã
+   cho đá đó 1.8. (Spot 'Fire' 20 + 'Firebox internal' 7 trỏ RA NGOÀI lò
+   theo euler — không chiếu vào miệng lò; `buildLights` set target đúng từ
+   euler, không phải bug.) Đã sửa: hemi 18→8, amb 9→3, fireGlow 20→6 (xem
+   R-08). Ảnh lò lần 3: ghi tối + than cam chunky + gạch ấm, chỉ còn glow
+   ấm ở giữa (không clip trắng). Lưu ý: gỗ tối (0.02) không đọc được từ fill
+   đều — nó đọc nhờ workGlow + spot cục bộ (đúng kiểu phòng gốc: góc tối,
+   vùng làm việc sáng).
+3. **Lưỡi kiếm đen (silhouette):** material kiếm catalogue `metalness: 0.75`
+   + KHÔNG có `scene.environment` — kim loại không có gì để phản chiếu
+   (diffuse chỉ còn (1−0.75)=0.25) nên lưỡi đọc như bóng đen (ảnh 03-held
+   lần 1–2). Đã sửa (R-08): PMREM env từ chính phòng
+   (`pmrem.fromScene(scene, 0.04)`, `environmentIntensity 0.5`, sinh 1 lần
+   lúc boot) — lưỡi giờ có sheen kim loại (ảnh 03-held / 01-workview lần 3).
+   Kiếm grade 0 vẫn tối (palette gốc nâu [86,68,56] — đúng dữ liệu), nhưng
+   đọc là kim loại chứ không phải silhouette đen.
+
+**Kết quả lần chạy 3 (full test, EXIT=0, 592s — lâu hơn do PMREM boot):**
+- `cargo test -p forgetax-core`: **82/82 PASS** (64 + 5 + 12 + 1).
+- Browser test EXIT=0, **0 console errors, 0 failed requests**; **FFT 7/7
+  PASS** trong full test (strike peak 0.742, centroid 7970; great 0.554;
+  break 0.846; tribute 0.508; fever 0.428; set 0.299; crackle 0.033).
+- Walk 1.05 m (W 30s, headless chậm — lần 1 là 1.75 m; game time chạy
+  ~0.03s/s thực nên quãng đường dao động theo tốc độ frame). E: held
+  true→false ✓. 12 đập → grade 5, value 7,375 G ✓. Brightness exp 200% =
+  3.286, 70% = 1.15 ✓. Menu đủ nút, Home → title → resume round 1 ✓.
+  Tribute ✓, endday ✓ (round 1→2), Fever ✓ + Great ✓. Low: pixelRatio
+  0.75 + đèn 5/11.
+- **Ảnh lần 3 đã xem hết (12 ảnh):** 00-title (đã xem lần 1–2, không đổi),
+  01-workview (pitch đúng: đe giữa, bảng phải), 02-walked (đi bộ tới sát
+  board, lưới ledger thấy rõ), 03-held (lưỡi có sheen kim loại), 04-after-
+  strikes (cùng work view), 05-bright200 (phòng sáng, đọc được), 06-bright70
+  (mặc định: đe/kiếm/board/ledger/rack đều đọc được; góc trái tối — đúng
+  kiểu phòng gốc), 07-furnace (hết trắng), 08-menu (đủ nút), 09-great
+  (**banner KHÔNG lọt vào ảnh** — xem dưới), 10-fever (wash teal toàn màn
+  hình + floor swords hiện), 11-ledger (giấy kem + lưới, cận cảnh 02 rõ hơn).
+- **Great banner — đã chứng minh riêng (`tools/dev-server/great-banner-test.js`,
+  ảnh `09b-great-banner.png`):** "ĐẠI THÀNH CÔNG / ×3.5x" chữ vàng lớn phủ
+  ngang màn hình, y hệt video 2 f_030. Ảnh 09 miss chỉ vì banner hiện 1.6s
+  (setTimeout, real time) trong khi headless poll + chụp chậm hơn — không
+  phải bug sản phẩm. Tương tự, vòng vàng tribute còn hiện trong ảnh 09 là
+  do game time headless chạy ~0.03s/s thực (fade 1s game = ~33s thực) —
+  trên máy thật 60fps nó fade đúng 1s.
+- **Fever overlay flicker (từ §9.3, vẫn mở):** overlay theo `feverAmount`
+  (envelope hash-gated) nên nhấp nháy 0↔0.45; ảnh 10-fever lần 3 bắt được
+  lúc ON (teal rõ). AEGIS/OWNER xem có chấp nhận không, hay wash nên steady
+  trong suốt Fever.
+
+### 9.8 Bàn giao cho AEGIS (vòng fix round) — CẬP NHẬT
+
+Kèm theo báo cáo này: [REMAKE-PROPOSALS.md](sandbox://workspace/forgetax-mobile/remake/REMAKE-PROPOSALS.md)
+(đã cập nhật R-08/R-09/R-24 + Nhóm D R-28–R-36) + 12 ảnh chụp mới trong
+`remake/.browser-test/` (lần chạy 3 + `09b-great-banner.png` + `diag-a…e.png`)
++ `remake/tools/fft-ref.py` (bảng phổ tham chiếu) + `remake/tools/dev-server/browser-test.js`
++ `fft-test.js` (FFT nhanh, 7/7 × 5 lần) + `furnace-diag.js` (chẩn đoán lò).
+
+**Tiêu chí pass/fail hàng đầu (OWNER nhấn mạnh): SOUND** — AEGIS kiểm độc lập
+bằng FFT/nghe so sánh synth mới (`sound.renderOffline(trigger)`) với WAV tham
+chiếu (bảng §9.2; kết quả SENSOR: 7/7 PASS, 5 lần liên tiếp + trong full test).
+Các mục khác: WASD đổi vị trí camera, E nhặt/đặt, title 50/49/1, lò không xanh
++ không cháy trắng, phòng sáng ở 70% và 200%, work view pitch −10° (đe giữa
+khung, KHÔNG nhìn lên trần), lưỡi kiếm có sheen (không silhouette đen),
+ledger lưới đúng số core, Fever wash teal, Great banner (xem 09b), menu đủ
+nút, cargo 82/82, 0 console error.
+
+
+### 9.9 AEGIS vòng 4 (fix round) — `[REJECT_TO_SENSOR]` (2026-11-22 01:xx) + SENSOR đã sửa M1–M4
+
+AEGIS kiểm độc lập: cargo 82/82 tự chạy, FFT 7/7 tự chạy (2 lần), full test tự
+chạy (~11 phút, EXIT 0, 0 console error, 0 failed request), tự chạy fft-ref.py
+trên 6 WAV (khớp bảng §9.2), tự đọc layout.json 3.672 objects, đo pixel bằng
+PIL trên ảnh của mình + của SENSOR. **Verdict: [REJECT_TO_SENSOR] — 0 MAJOR,
+0 bịa đặt (Law-0 sạch), 4 MINOR** (trong đó M3/M4 là 2 mục §9.7 SENSOR khẳng
+định "đã sửa" nhưng số đo AEGIS cho thấy chưa xong) + 7 observation (O1–O7).
+SENSOR đã sửa hết M1–M4 + O1/O3/O4/O6, tự test lại lần 4 (dưới đây).
+
+**M1 — Banner Great ghi "×3.5x" (thừa 1 dấu).** `app.js:353`: `"×" + ratio.toFixed(1) + "x"`.
+Gốc f_030 ghi "3.5x" (chỉ hậu tố `x`). AEGIS chỉ ra ảnh 09b KHÔNG chứng minh
+được chữ đúng — `great-banner-test.js` force banner bằng chuỗi hardcode
+`'×3.5x'`, tức test tự nhét chữ sai vào rồi chụp. **Sửa:** `ratio.toFixed(1) + "x"`
+(app.js:353) + sửa cả test (`'3.5x'`) + browser-test.js giờ LOG chữ banner thật
+khi Great thật xảy ra (`greatBannerText`). **Chứng minh lần 4:** log full test
+`greatBannerText: 'ĐẠI THÀNH CÔNG5.0x'` (Great thật, không force) + 09b mới
+"ĐẠI THÀNH CÔNG / 3.5x" chữ vàng lớn đúng kiểu f_030.
+
+**M2 — Overlay Fever nhấp nháy (wash lúc có lúc không).** `app.js:686-688` lấy
+opacity từ `getFeverAmount()`; `feverEnvelope()` (`scene3d.js:2202-2212`)
+hash-gate trong ramp 0–2.8 s nên amount nhảy 0 ↔ ~1. Bằng chứng AEGIS: lần chạy
+của mình `feverOverlayOpacity = 0`, ảnh 10-fever không có wash trong khi Fever
+đang active ("NHẬP THẦN — 4.0s" trên bảng, `feverSeen: true`); f_027/f_033
+cách nhau ~30 s đều cho thấy phòng phủ teal ổn định, không chớp. **Sửa:** overlay
+lấy theo `state.fever.active` (steady 0.45 trong suốt Fever, 0 khi hết); envelope
+giữ nguyên cho radiance/shake (`getFeverAmount`). **Chứng minh lần 4:**
+`feverOverlayOpacity: 0.45` và `feverOverlayOpacity2: 0.45` (2 ảnh 10/10b cách
+nhau 2 frame, wash teal giống hệt nhau) — không còn nhấp nháy.
+
+**M3 — Lưỡi kiếm cầm tay VẪN ĐEN ở 70%.** AEGIS đo pixel trên ảnh 03-held lần
+chạy của mình: lưỡi **0.0–15.9/255**, nhiều điểm thuần (0,0,0)/(2,0,0); lần 3 của
+SENSOR cũng chỉ 1.6–22.7. PMREM env có thật (`scene3d.js:2674-2676`,
+`environmentIntensity 0.5`) nhưng env lấy từ chính căn phòng tối nên kim loại
+không có gì sáng để phản chiếu; palette grade 0 nâu [86,68,56] + metalness 0.75
+càng tối. **Sửa:** metalness kiếm 0.75 → **0.5** + envMapIntensity **2.0**
+(material catalogue `buildCatalogueSword` + blade của base Blade
+`buildSwordPartMesh`) — SwordV2 gốc là shader TÙY BIẾN, không phải PBR metal
+chuẩn, nên lưỡi đọc được màu palette quan trọng hơn con số 0.75 (TODO-RE/R-08,
+ghi trong REMAKE-PROPOSALS.md R-08). **Chứng minh lần 4:** đo pixel 03-held
+(`measure-shots.py`): vùng lưỡi p90 = **80.2**, p95 = **160.3**, max 247.0
+(trước: 0–16); xem ảnh: lưỡi thép tối có sheen + viền sáng, cán gỗ rõ, không
+còn silhouette đen. Kiếm trên đe (06) cũng có sheen rõ hơn.
+
+**M4 — Miệng lò vẫn cháy gần trắng ở lõi.** AEGIS đo ảnh 07-furnace lần chạy của
+mình: tâm miệng lò RGB **(230,210,175), độ sáng 211.7/255**, vùng sáng đều không
+còn chi tiết; so gốc f_015/f_016: miệng lò cam, thấy rõ nan ghi + khoảng tối
+bên trong. **Sửa:** fireGlow 6 → **3**, hemi 8.0 → **6.0**, amb 3.0 → **2.0**
+(lõi ~1.2 tổng: fireGlow 0.41 + hemi 0.59 + amb 0.20 — sáng ấm, không trắng
+kem). Đề nghị "thêm than ember trong miệng lò" của AEGIS — **TỪ CHỐI**: 19 khối
+clinker là data layout thật, thêm than = bịa (Law 0), ghi rõ trong code +
+REMAKE-PROPOSALS.md R-08. **Chứng minh lần 4:** đo pixel 07-furnace: tâm
+**(195,163,116), sáng 167.2** (trước 211.7); diag-a mới cũng 166.2; xem ảnh:
+ghi tối + than cam có chiều sâu + gạch ấm, lõi là glow ấm có cấu trúc (không
+còn blob trắng đều). Lõi vẫn là phần sáng nhất trong lò (lửa) — AEGIS vòng 5
+đánh giá lại.
+
+**O1 — Peak FFT strike dao động mạnh (0.73–0.89, biên xấu nhất ~0.06).**
+SENSOR log "0.73–0.79, 5 lần" chưa phản ánh hết phương sai (noise ngẫu nhiên).
+**Sửa:** thump 0.25 → **0.22** (`sound.js`). **Chứng minh:** FFT 5 lần liên
+tiếp 7/7 PASS; lần 4 full test strike peak **0.771**, centroid 8058,
+bands [0.46, 0.00, 0.07, 0.40, 0.06] — biên tốt hơn.
+
+**O3 — Ảnh chẩn đoán lò `diag-a…e.png` KHÔNG còn trên đĩa.** Do full test
+`rm -f .browser-test/*.png` trước lần chạy 3 đã xóa chúng. **Sửa:** đổi
+`furnace-diag.js` OUT sang `.browser-test-diag/` (riêng, không bị full test
+xóa) + chạy lại sau khi đổi fireGlow — 5 ảnh đã lưu lại
+(`.browser-test-diag/diag-a…e.png`, lần này có diag-a mới với fireGlow 3).
+
+**O4 — Comment cũ sai sự thật:** `scene3d.js:659` ghi "the teal emissive below
+is still the R-09 remake proposal (kept + marked)" trong khi code ngay dưới đã
+XÓA emissive (F-3b). **Sửa:** câu chữ khớp code (emissive đã REMOVED, F-3b).
+
+**O5 — Ảnh 01/02/03 lần chạy AEGIS bị đen/bảng đen dù cùng vị trí camera với
+SENSOR.** Artifact chụp headless (chính `furnace-diag.js:97` cũng ghi nhận
+"black canvas if the shot follows a single frame"), KHÔNG phải lỗi sản phẩm.
+**Sửa:** browser-test.js chờ thêm 1 frame nữa (2 frame mới) trước shot 01.
+
+**O6 — Lưới ledger chưa có ảnh cận cảnh nào chứng minh đọc được.** 11-ledger cả
+2 lần chạy đều chụp từ work view, ô + chỉ ~2px. **Sửa:** thêm `setCamPos(x,y,z)`
+debug vào ForgeScene + shot mới `12-ledger-closeup.png` (camera ~1 m từ ledger,
+cùng yaw/pitch 142/0). **Chứng minh lần 4:** 12-ledger-closeup cho thấy lưới
+đọc được rõ — cột HƯ HẠI/GIỮ/THÀNH CÔNG/ĐẠI THÀNH CÔNG, ô + xanh + □ trống,
+"x0.85".
+
+**O2 (nửa trái khung hình ở 70% gần như đen — AEGIS: chấp nhận được tạm thời)
+và O7 (draw call KHÔNG phải proxy cho Low — đã xác nhận)** — không sửa thêm;
+ghi nhận. O2: vùng làm việc đọc được, góc tối giống phong cách phòng gốc; bro
+chơi ở 200% sẽ ổn.
+
+### 9.10 Kết quả kiểm chứng lần 4 (sau sửa M1–M4, 2026-11-22)
+
+- **Cargo:** `cargo test -p forgetax-core` = **82/82 PASS** (64 + 5 + 12 + 1).
+- **FFT:** `fft-test.js` **7/7 PASS × 5 lần liên tiếp**; trong full test lần 4:
+  strike 0.771/8058, great 0.554/2032, break 0.782/3025, tribute 0.508/3685,
+  fever 0.428/76, set 0.299/1595, crackle 0.031/120 — `fftFails: []`.
+- **Full browser test lần 4:** `node tools/dev-server/browser-test.js` **EXIT=0**
+  (~11 phút, log `/tmp/ft-browsertest5.log`): **0 console errors, 0 failed
+  requests.** Walk 1.18 m ([0.15,1.76,−0.05] → [−0.415,1.76,0.986]); pickup
+  held true→false; 12 strikes → grade 5, value 7,375 G; brightness exp 200% =
+  3.286, 70% = 1.15; menu đủ nút (codex disabled), Home → title → resume round
+  1; tribute ✓; endday ✓ (round 1→2); feverSeen ✓ + greatSeen ✓.
+  Stats: medium 123 calls / 122,925 tris / PR 1 / 11 lights; Low 133 calls /
+  128,303 tris / PR 0.75 / 5 lights (calls vẫn tăng khi bật Low — xác nhận lần
+  nữa calls KHÔNG phải proxy; proxy đúng là pixelRatio + lightsOn).
+- **14 ảnh lần 4** trong `remake/.browser-test/` (00-title … 12-ledger-closeup,
+  gồm 10b-fever.png + 12-ledger-closeup.png mới) + `09b-great-banner.png` mới
+  (chữ "3.5x" đã sửa) + 5 ảnh diag mới trong `remake/.browser-test-diag/`.
+  SENSOR đã xem: 00-title, 01-workview, 03-held, 06-bright70, 07-furnace,
+  09-great, 09b, 10-fever, 10b-fever, 12-ledger-closeup, diag-a-baseline.
+- **Đo pixel (PIL, `tools/dev-server/measure-shots.py`):** lò tâm 167.2 (trước
+  211.7); lưỡi cầm tay p90 80.2 / p95 160.3 / max 247.0 (trước 0–16).
+- **Còn mở (ghi rõ, không giấu):** (a) 09-great lần 4 lại trượt timing chụp
+  (banner 1.6 s real-time, headless poll + screenshot chậm hơn) — bằng chứng
+  M1 là log `greatBannerText` + 09b, không phải ảnh 09. (b) Lõi lò vẫn là phần
+  sáng nhất (166–167) — đã ấm + có cấu trúc, nhưng AEGIS vòng 5 đánh giá lại
+  xem đủ chưa. (c) O2 nửa trái 70% còn tối — chấp nhận tạm, chờ bro live test.
+  (d) Ảnh diag-a + 09b có artifact headless (nửa dưới là frame lặp) — không
+  phải lỗi sản phẩm, nhưng AEGIS vòng 5 lưu ý khi xem.
+
+### 9.11 Bàn giao cho AEGIS (vòng 5 — kiểm lại M1–M4)
+
+Kèm theo báo cáo này: [REMAKE-PROPOSALS.md](sandbox://workspace/forgetax-mobile/remake/REMAKE-PROPOSALS.md)
+(đã cập nhật R-08: hemi 6.0/amb 2.0/fireGlow 3 + metalness kiếm 0.5/envMapIntensity 2.0)
++ 14 ảnh lần 4 trong `remake/.browser-test/` + `09b-great-banner.png` mới +
+5 ảnh diag mới trong `remake/.browser-test-diag/` + `tools/dev-server/measure-shots.py`
++ log `/tmp/ft-browsertest5.log`.
+
+**AEGIS vòng 5 kiểm lại (tập trung, không cần chạy lại toàn bộ từ đầu nếu không
+muốn — nhưng phải tự đo lại M1–M4 bằng số của mình):**
+1. **M1:** log `greatBannerText` trong `/tmp/ft-browsertest5.log` + ảnh 09b
+   (chữ "3.5x", không "×") — và tự chạy 1 Great thật để đọc chữ banner.
+2. **M2:** 2 ảnh 10-fever + 10b-fever (wash phải giống nhau, steady) + log
+   `feverOverlayOpacity` / `feverOverlayOpacity2` (cả 2 phải = 0.45).
+3. **M3:** tự đo pixel lưỡi trên 03-held (kỳ vọng p90 ≥ 60, không còn 0–16) +
+   xem ảnh (lưỡi có sheen, không silhouette đen).
+4. **M4:** tự đo pixel lõi lò trên 07-furnace (kỳ vọng tâm < 180, ấm không trắng
+   kem) + xem ảnh + 5 ảnh diag mới trong `.browser-test-diag/`.
+5. **O6:** xem 12-ledger-closeup (lưới đọc được không).
+6. FFT 7/7 + cargo 82/82 + 0 console error (tự chạy lại nhanh).
+
+### 9.12 AEGIS vòng 5 kết quả + M3 điều tra sâu + O6 header fix (2026-11-22)
+
+**AEGIS vòng 5: `[REJECT_TO_SENSOR]` — M1/M2/M4 PASS, M3 FAIL, O6 PARTIAL.**
+- M1 PASS (log `greatBannerText: "ĐẠI THÀNH CÔNG5.0x"`, không × thừa).
+- M2 PASS (overlay 0.45 steady cả 2 lần đo; pixel 2 frame fever gần như giống nhau).
+- M4 PASS (lõi lò (195,163,116), 167.2/255, ấm, 0 pixel ≥240; profile mượt).
+- **M3 FAIL:** lưỡi cầm tay vẫn đen — AEGIS đo theo đường chéo lưỡi (phương pháp
+  đúng): median 6.0, p90 6.9. Claim p90 80.2 của SENSOR lần 4 là SAI phương pháp
+  (đo vùng rộng, dính giấy ledger trắng). Kiếm trên đe thì đọc tốt (p90 224).
+- O6 PARTIAL: lưới ledger đọc được, nhưng header "GIỮ/THÀNH CÔNG/ĐẠI THÀNH CÔNG"
+  trông chồng nhau ở góc chéo + bảng instrument che ~40% giấy + cột đầu và hệ số
+  seal bị cắt. Cần ảnh close-up TRỰC DIỆN để đóng O6.
+- C1: comment `app.js` còn "(×3.5x)" — đã sửa (chỉ comment, không ảnh hưởng code).
+
+**M3 — điều tra sâu (heldlight-diag.js, 2026-11-22, 6 lần chạy):**
+- SpotLight gắn camera (intensity 12, nhắm midpoint lưỡi, góc 0.7): vặn 12→200
+  KHÔNG đổi 1 pixel — đèn không vào render (dù có trong scene, parentIsCamera).
+- PointLight gắn camera (intensity 3, tại [0.2,0.1,−0.3]): cũng không tới lưỡi.
+- PointLight con của SCENE + `heldLightTick()` cập nhật vị trí mỗi frame (0.35m
+  trước camera): đèn ĐÃ bám đúng vị trí ([−0.11,1.75,0.44], gần kiếm
+  [−0.43,1.35,0.43]) — nhưng lưỡi VẪN tối, kể cả khi vặn lên 300, distance 0,
+  decay 0 (cả khu đe trắng xóa, lưỡi vẫn đen).
+- Pháp tuyến world của mesh: maxDot 0.998, 31% đỉnh hướng về đèn; đỉnh mặt phẳng
+  lưỡi (mẫu 1 đỉnh, mặt ít đỉnh) dot 0.955 — mặt lưỡi HƯỚNG VỀ đèn.
+- Metalness 0: KHÔNG cứu được (lưỡi vẫn tối).
+- MeshBasicMaterial trắng: lưỡi hiện TRẮNG RÕ — geometry render hoàn hảo.
+- Kết luận: mặt phẳng lưỡi nhận ~0 diffuse từ MỌI nguồn (hemi/amb/workGlow/
+  heldLight) dù pháp tuyến hướng về đèn — lý do shader-level chưa hiểu được.
+  Headless SwiftShader chỉ ~0.2–0.5 fps (cả phiên diag 8–9 frame), nên diag
+  phải chờ 3 frame mới sau E trước khi đo (bản đầu đo quá sớm, đèn kẹt [0,0,0]).
+- **FIX (đã áp dụng):** emissive TRUNG TÍNH bằng đúng màu palette của kiếm
+  (clone từ `material.color`, không đổi hue) intensity 0.5, CHỈ cho kiếm cầm
+  tay (trong `setHeldSword`, clone material). Đo đường chéo lưỡi:
+  median **122.9** (từ 6.9), p90 122.9, max 123.8 — thép nâu-tan ấm, đọc rõ,
+  không phát sáng trắng/teal. Đây KHÔNG phải emissive teal R-09 (atlas sai +
+  màu teal, đã rút ở F-3b vì gây vệt xanh) — không emissiveMap, không đổi màu,
+  chỉ kiếm cầm tay (kiếm đe/sàn/quầy đọc tốt nhờ workGlow, không cần).
+  Ghi TODO-RE/R-08 trong code (CIPHER v2: SwordV2 emission ≈ 0 — đây là
+  approximation readability cho view-model, không phải dữ liệu shader gốc).
+  Đèn heldLight (PointLight scene-child, intensity 3) VẪN GIỮ làm fill phụ.
+- Debug handle mới: `get THREE()` trên `window.ForgeScene` (để harness dùng
+  THREE trong evalJs; THREE là module-scoped, không phải global).
+
+**O6 — header ledger fix (đã áp dụng, lần 6):** font header 11px → 10px + header
+dài hơn colW−4 được tách 2 dòng tại khoảng trắng ("ĐẠI THÀNH" / "CÔNG").
+Ảnh close-up TRỰC DIỆN lần 5 đã xem: lưới đọc được, totals "0, 2, 5, 18, 4"
+ĐÚNG (Fever đang active nên GÃY = 0 — deck live [0,2,5,18,4], không phải bug).
+Ảnh lần 6 (sau fix header) CHƯA xem — xem trong lần 7.
+Câu hỏi mở (chưa quyết): header cột Hold ghi "GIỮ" (từ `ui.outcome_hold`) nhưng
+gốc ghi "GIỮ NGUYÊN" (`ui.bb3ad48c0b`) — đổi sẽ ảnh hưởng cả board. Chờ quyết
+định của manager/AEGIS, không tự đổi.
+
+**Lần 7 (đang chạy khi viết §9.12):** full browser test
+`tools/dev-server/browser-test.js` → log `/tmp/ft-browsertest8.log`. Xác minh:
+M3 (03-held, kỳ vọng median lưỡi ≥ 60, thép nâu đọc rõ), O6 (12-ledger-closeup
+trực diện, header không chồng), FFT 7/7, cargo 82/82, 0 console error.
+**Kết quả lần 7 (EXIT=0, ~12 phút, log `/tmp/ft-browsertest8.log`):**
+- FFT 7/7 PASS (strike 0.693/8062, great 0.554/2032, break 0.844/2969,
+  tribute 0.508/3685, fever 0.428/76, set 0.299/1595, crackle 0.026/120).
+- Walk 1.75m ([0.15,1.76,−0.05]→[−0.687,1.76,1.487]); pickup held true→false,
+  heldLightOn 3 / heldLightOff 0; brightness exp 3.286/1.15.
+- Menu đủ nút (codex disabled), Home → title → resume round 1; tribute ✓;
+  endday ✓ (round 1→2); feverSeen ✓ + greatSeen ✓;
+  `greatBannerText: 'ĐẠI THÀNH CÔNG6.3x'`; fever overlay 0.45/0.45.
+- 0 console error, 0 failed request. Stats medium 123 calls / 122,925 tris /
+  PR 1 / 11 lights.
+- **M3 (03-held): lưỡi median 41.4, p90 41.4, max 76.2** (đường chéo lưỡi,
+  từ 6.0) — thép nâu đọc rõ, không còn silhouette (trong diag close-up đo
+  122.9 vì đèn crank 300; ở cường độ làm việc 3 + góc full-test, 41.4 là
+  đúng màu palette tối [86,68,56]). Lò 07-furnace tâm (195,163,116), 167.2 —
+  M4 giữ.
+- **O6 (12-ledger-closeup lần 7): CHƯA ĐÓNG.** Header "THÀNH CÔNG" / "ĐẠI THÀNH
+  CÔNG" VẪN chồng ("THÀNHĐẠI THÀNH") — font 10px còn để "ĐẠI THÀNH" ~70px,
+  rộng hơn cột 69.6px. Bảng instrument VẪN che trái ~40% + hệ số seal bị cắt
+  ("Y x0.85") vì ở 1.25m FOV ngang ~90° phủ ~2.5m, rộng hơn ledger 1.09m.
+  **Fix O6b (đã áp dụng sau lần 7):** font header 10px → **8px**
+  ("ĐẠI THÀNH" ~56px, vừa cột) + camera close-up dời tới **0.7m**
+  (`setCamPos(-1.95, 1.79, 1.97)`, khung phủ ~1.4m, ledger chiếm ~78%, bảng
+  ra khỏi khung). Xác minh ở lần 8.
+- Cargo 82/82 + FFT 7/7 (chạy lại độc lập sau lần 7, đều PASS).
+
+**Lần 8 (EXIT=0, ~12 phút, log `/tmp/ft-browsertest9.log`):**
+- FFT 7/7 PASS; walk 1.05m; pickup held true→false, heldLight 3/0;
+  brightness 3.286/1.15; fever 0.45/0.45; great "ĐẠI THÀNH CÔNG5.5x";
+  0 console error, 0 failed request.
+- **M3 (03-held): median 45.9, p90 46.6, max 101.0** — giữ (đọc rõ).
+- **O6 (12-ledger-closeup lần 8): CHƯA ĐÓNG.** Header "THÀNHĐẠI THÀNH" VẪN
+  dính ở font 8px + camera 0.7m còn cắt trên/dưới (ledger cao 1.39m cần
+  ≥1.0m mới vừa khung dọc) + bảng vẫn che trái ~25%.
+  **Nguyên nhân thật (tìm ra sau lần 8, không phải font size):** `ctx.font`
+  bị RÒ trong `drawLedger` — vòng lặp vẽ ô lưới set `ctx.font = 700 12px`
+  (ô "+") và dòng totals set `700 16px`, nên từ cột 2 trở đi header bị đo
+  VÀ vẽ ở font stale 16px, không phải 7px/8px/10px đã set trước vòng lặp.
+  (Các lần hạ font 11→10→8→7 đều có thật trong file serve, nhưng bị ghi đè.)
+  **Fix O6c (đã áp dụng):** reset `ctx.font = 700 7px` ở ĐẦU mỗi lần lặp cột
+  (trong vòng lặp, trước `measureText`). Đo thực bằng canvas: ở 7px
+  "THÀNH CÔNG" 47.4px, "ĐẠI THÀNH CÔNG" 61.4px — cả hai vừa cột 69.6px
+  trên MỘT dòng, không cần tách.
+- **Xác minh O6c bằng ledger-diag** (`tools/dev-server/ledger-diag.js`, mới):
+  header "GÃY / HƯ HẠI / GIỮ / THÀNH CÔNG / ĐẠI THÀNH CÔNG" đều một dòng,
+  tách biệt rõ, KHÔNG chồng (ảnh `.browser-test-diag/ledger-closeup.png`).
+  Lưới + totals 9/2/5/18/4 đọc được. Seal chỉ thấy đuôi "x0.85" (đầu
+  "TRỌNG SỐ G" bị bảng instrument che ở góc close-up này — framing của shot
+  test, không phải lỗi ledger; giá trị vẫn đọc được).
+- Cargo 82/82 + FFT 7/7 (chạy lại độc lập, đều PASS).
+
+**Lần 9 (EXIT=0, ~12 phút, log `/tmp/ft-browsertest10.log`):**
+- FFT 7/7 PASS; walk 0.8m; pickup held true→false, heldLight 3/0;
+  brightness 3.286/1.15; fever 0.45/0.45; great "ĐẠI THÀNH CÔNG5.5x";
+  0 console error, 0 failed request.
+- **M3 (03-held): median 46.2, p90 46.8, max 111.8** — giữ (lần 7: 41.4,
+  lần 8: 45.9). Lò 07-furnace tâm (192,161,115), 165.0 — ấm, M4 giữ
+  (số 116.7 xanh ở lần 8 là artifact đo — pixel tâm rơi vào chỗ khác,
+  có thể đang Fever / trên ghi; lần 9 trở lại ấm).
+- **O6 (12-ledger-closeup lần 9, canonical): ĐÃ ĐÓNG.** Header 5 cột một
+  dòng, tách biệt rõ, KHÔNG chồng; lưới + totals 0/2/5/18/4 đọc được;
+  "CỐNG PHẨM YÊU CẦU 2,100 G" + "ĐÃ DÂNG 294 G" đọc được; toàn bộ ledger
+  vừa khung dọc (camera 1.1m). (Ảnh có wash teal vì Fever đang active khi
+  chụp — đúng luật. Seal chỉ thấy đuôi "x0.85", đầu "TRỌNG SỐ G" bị bảng
+  che ở góc close-up — framing của shot test, không phải lỗi ledger.)
+- Cargo 82/82 + FFT 7/7 (chạy lại độc lập, đều PASS).
+
+### 9.13 Bàn giao cho AEGIS (vòng 6 — kiểm lại M3 + O6 sau fix cuối)
+
+Kèm theo: [REMAKE-PROPOSALS.md](sandbox://workspace/forgetax-mobile/remake/REMAKE-PROPOSALS.md)
+(R-08 đã cập nhật: heldLight scene-child + neutral emissive) + 14 ảnh lần 8
+trong `remake/.browser-test/` + ảnh diag `.browser-test-diag/ledger-closeup.png`
+(header đã sửa) + `held-emissive.png` (lưỡi 122.9) + log `/tmp/ft-browsertest9.log`
+(lần 8) và `/tmp/ft-browsertest10.log` (lần 9, khi xong).
+
+**AEGIS vòng 6 kiểm lại (tập trung):**
+1. **M3 (chính):** đo pixel lưỡi trên 03-held lần 8/9 bằng phương pháp đường
+   chéo (tip→guard, KHÔNG đo vùng rộng — lần 4 đã chứng minh vùng rộng đo
+   nhầm giấy ledger). Kỳ vọng median ≥ 30, p90 ≥ 40 (lần 7: 41.4, lần 8:
+   45.9). Xem ảnh: lưỡi thép nâu đọc rõ, không silhouette đen, không phát
+   sáng trắng/teal. Kiểm tra code: emissive CHỈ ở `setHeldSword`
+   (clone material, `emissive = material.color`, intensity 0.5) — kiếm đe/
+   sàn/quầy KHÔNG có emissive (đọc tốt nhờ workGlow).
+2. **O6 (chính):** xem 12-ledger-closeup lần 9 + `.browser-test-diag/
+   ledger-closeup.png`: header 5 cột một dòng, không chồng; lưới + totals
+   đọc được. (Seal "TRỌNG SỐ G" bị bảng che ở góc close-up là framing của
+   shot, không phải lỗi ledger — kiểm tra bằng 11-ledger.png shot rộng.)
+3. **M1/M2/M4 (giữ):** log lần 8/9 — banner Great không "×" thừa, fever
+   overlay 0.45 steady, lò ấm không trắng.
+4. FFT 7/7 + cargo 82/82 + 0 console error (tự chạy lại nhanh).
+5. **Câu hỏi mở cho AEGIS/manager:** (a) header cột Hold ghi "GIỮ" hay
+   "GIỮ NGUYÊN" (gốc dùng "GIỮ NGUYÊN", `ui.bb3ad48c0b` — đổi sẽ ảnh hưởng
+   cả board)? (b) lưỡi cầm tay ở mức 41–46/255 có đủ sáng với mắt người
+   không, hay cần tăng emissive lên 0.6–0.7?
+
+### 9.14 AEGIS vòng 6 — VERDICT: [PASS_WITH_PROOF] (2026-11-22)
+
+AEGIS kiểm độc lập, không dùng số SENSOR. Kết quả:
+- **M3 PASS:** đo pixel đường chéo PCA trên 03-held lần 9: median **43.3**, p90 **44.7**, max 115.3, median RGB (60,41,28) thép nâu ấm R>G>B — đạt kỳ vọng (≥30/≥40). Lưỡi đọc rõ, không silhouette, không phát sáng trắng/teal. Code: emissive CHỈ ở `setHeldSword` (scene3d.js:2222-2223, clone + `emissive = material.color`, 0.5, không emissiveMap); `buildSwordPartMesh` ép emissive đen; 9 material có emissive ≠ 0 trong scene-data.json toàn đồ gốc, không có kiếm nào. heldLight scene-child PointLight, intensity 3 khi cầm / 0 khi tay không, tick 0.35 m trước camera.
+- **O6 PASS:** 12-ledger-closeup lần 9: header 5 cột một dòng, không chồng ("GÃY / HƯ HẠI / GIỮ / THÀNH CÔNG / ĐẠI THÀNH CÔNG"); lưới + totals 0/2/5/18/4 đọc được (Fever active, GÃY=0 đúng luật); live lines "CỐNG PHẨM YÊU CẦU 2,100 G / ĐÃ DÂNG 294 G" đọc được; toàn ledger vừa khung dọc (camera 1.1 m). Diag ledger-closeup: totals 9/2/5/18/4 đọc được. Code: `ctx.font = 700 7px` reset đầu mỗi lần lặp cột (scene3d.js:1264).
+- **M1/M2/M4 giữ PASS:** log lần 9 (`/tmp/ft-browsertest10.log`): banner "ĐẠI THÀNH CÔNG5.5x" (không × thừa); fever overlay 0.45/0.45 steady; furnace tâm (640,300) median (201,169,123), sáng 164.3, ấm không clip trắng. Kiếm trên đe ở 01/06 vẫn có pixel thép sáng p99 222.3.
+- **Tự chạy lại:** cargo 82/82 PASS; fft-test 7/7 PASS (strike 0.741/7963, great 0.554/2032, break 0.829/3012, tribute 0.508/3685, fever 0.428/76, set 0.299/1595, crackle 0.026/120); log lần 9: consoleErrors [], failedRequests [], fftFails [].
+- **Defect còn lại:** 1 MINOR (framing shot test — hàng totals sát mép dưới khung ở cả 2 ảnh close-up, ảnh diag bị cắt một phần dưới; đề nghị lùi camera ~0.05 m ở shot sau) + 2 OBSERVATION (không shot nào cho thấy trọn dòng seal "TRỌNG SỐ GÃY x0.85" không bị che — cần shot góc khác nếu OWNER muốn xác minh; lưỡi ~43/255 sáng gần bằng tường gỗ phía sau nên đọc nhờ hue/cạnh chứ không nhờ độ sáng; kiếm trên đe ở shot rộng vẫn tối khi nhìn xa — trạng thái đã chấp nhận từ vòng 5).
+- **Câu (a) GIỮ vs GIỮ NGUYÊN — AEGIS trả lời: giữ "GIỮ".** `vi.txt` không có key `ui.outcome_*` nào (grep outcome = 0) — 5 nhãn board là bản dịch remake R-05 đã duyệt (`app.js:66` → `i18n.js:99` `ui.outcome_hold: "GIỮ"`). `ui.bb3ad48c0b` = "GIỮ NGUYÊN" chỉ dùng ở màn hình title (`index.html:39`, "GIỮ NGUYÊN 49%"), không phải nhãn board. Đổi `ui.outcome_hold` sẽ đổi cả board lẫn header ledger (dùng chung `view.channels`); đổi riêng header ledger sẽ làm ledger lệch board — không nên. Nếu OWNER muốn đúng chữ gốc thì đổi một key cho cả hai chỗ nhất quán + kiểm lại độ vừa cột board (ở 7px "GIỮ NGUYÊN" ~63px vừa cột ledger 69.6px, cột board hẹp hơn cần đo lại). Mặc định: giữ "GIỮ".
+- **Câu (b) lưỡi ~43–46/255 — đủ để đóng M3, nhưng còn tối; nên thử 0.6, không nhảy 0.7.** Trên ảnh headless lưỡi phân biệt rõ với tường gần đen nhờ màu nâu ấm + cạnh — hình dạng/màu đọc được, không còn silhouette. Nhưng 43/255 là vùng tối (17%), trên màn hình thật của OWNER biên này có thể mỏng. Palette gốc nâu tối [86,68,56] nên tăng emissive 0.5 → 0.6 chỉ đưa lưỡi lên ~52/255 — vẫn là thép, không nguy cơ phát sáng trắng. Đề nghị: thử 0.6 ở vòng sau nếu OWNER thấy lưỡi còn tối; không tự đẩy 0.7 khi chưa có phản hồi live.
+- **Kết luận AEGIS:** M3 + O6 xong theo đúng tiêu chí vòng 6. Đề xuất chuyển sang OWNER duyệt ảnh (kèm lưu ý thử emissive 0.6 ở vòng sau nếu OWNER thấy lưỡi còn tối). Không phát hiện MAJOR, Law-0 sạch.
+- **Housekeeping:** dev-server port 1420 đã tắt sau khi AEGIS xong (`fuser -k 1420/tcp`). KHÔNG push, KHÔNG release — chờ manager verify + OWNER duyệt ảnh.
