@@ -129,6 +129,13 @@ pub struct StateSnapshot {
     pub sword_index: usize,
     pub swords_left: usize,
     pub chances: [u32; 5],
+    // F-6 — the Ledger's printed probability grid: the RAW FillDeck
+    // counts (Run::deck_raw) + the seal factor (Run::seal_factor).
+    // The frontend draws "TỔNG {sum}" + one column per outcome from
+    // these live values (video 2 f_018 shows 4/12/16/16/20 = 68 in the
+    // OWNER's late-game run; the P0 starter deck is [9,2,5,18,4]).
+    pub deck: [f64; 5],
+    pub seal: f64,
     pub fever: FeverSnapshot,
     pub relics: Vec<String>,
     pub strikes: u64,
@@ -213,6 +220,8 @@ fn snapshot(run: &Run) -> StateSnapshot {
         sword_index: run.current_index(),
         swords_left: run.swords_left(),
         chances: run.chances(),
+        deck: run.deck_raw(),
+        seal: run.seal_factor(),
         fever: FeverSnapshot {
             charge: run.fever.charge(),
             needed: run.fever.charge_needed(),
