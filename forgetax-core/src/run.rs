@@ -25,12 +25,12 @@
 //!   their current value. The original's early-settle behaviour is
 //!   unresolved. TODO-RE.
 
-use crate::config::{CONTRACT_ROUNDS, SWORD_SUPPLY};
+use crate::config::{CONTRACT_ROUNDS, SEAL_RISK, SWORD_SUPPLY};
 use crate::contract::{Contract, Settle};
 use crate::frenzy::{Fever, FeverEnd};
 use crate::relics::{Loadout, StrikeEffects};
 use crate::sword::{refresh_value, Sword};
-use crate::tickets::{CampaignFields, Outcome, SplitMix64};
+use crate::tickets::{fill_deck, CampaignFields, Outcome, SplitMix64};
 
 /// Whether the run is still going.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -157,6 +157,33 @@ impl Run {
                 );
                 deck.per_mille()
             }
+        }
+    }
+
+    /// Raw FillDeck counts for the next strike (REA-REPORT §15.1,
+    /// `fill_deck` — BEFORE the Danger rescale / risk factors of
+    /// `chances_weights`). These are the integers the original prints on
+    /// the Forge Ledger's probability grid ("TỔNG {sum}" + one column per
+    /// outcome, video 2 frame f_018: 4/12/16/16/20 = 68 in the OWNER's
+    /// late-game run; the P0 starter deck is [9, 2, 5, 18, 4] = 38).
+    /// The grid is printed from these live values, never from the video's
+    /// numbers. In Fever, BREAK is 0 (fill_deck removes it).
+    pub fn deck_raw(&self) -> [f64; 5] {
+        fill_deck(
+            &|id| self.loadout.rank(id),
+            &CampaignFields::default(),
+            self.fever.is_active(),
+        )
+    }
+
+    /// The seal risk factor printed on the Ledger ("TRỌNG SỐ GÃY x0.85",
+    /// vi.txt ui.8becf7224b): SEAL_RISK (config.rs, 0.85) when the seal
+    /// relic is owned, else 1.0 (no seal → the factor is not applied).
+    pub fn seal_factor(&self) -> f64 {
+        if self.loadout.rank("seal") > 0 {
+            SEAL_RISK
+        } else {
+            1.0
         }
     }
 
@@ -394,6 +421,23 @@ mod tests {
         assert_eq!(run.contract.round, 1);
         assert_eq!(run.contract.current_quota(), 1800.0);
         assert_eq!(run.state, RunState::Playing);
+    }
+
+    #[test]
+    fn deck_raw_starter_is_9_2_5_18_4() {
+        // FillDeck (§15.1) with the 8 starters: BREAK 9, Damage 2,
+        // Hold 2*(hold-file)+5 = 5, Success 12+4*nail+2*file = 18,
+        // Great 2+2*pin = 4. The Ledger grid prints these live values.
+        let run = Run::new(1);
+        assert_eq!(run.deck_raw(), [9.0, 2.0, 5.0, 18.0, 4.0]);
+    }
+
+    #[test]
+    fn seal_factor_is_0_85_with_starter_seal() {
+        // The starter pool owns "seal" → SEAL_RISK (config.rs 0.85),
+        // the factor the Ledger prints as "TRỌNG SỐ GÃY x0.85".
+        let run = Run::new(1);
+        assert_eq!(run.seal_factor(), 0.85);
     }
 
     #[test]
